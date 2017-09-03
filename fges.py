@@ -1,9 +1,13 @@
 import networkx as nx
 import itertools
-from graph_util import *
+import graph_util
 from sortedcontainers import SortedListWithKey
 
 class FGES:
+    """
+    Python FGES implementation, heavily inspired by tetrad 
+    https://github.com/cmu-phil/tetrad
+    """
 
     def __init__(self, variables, score, maxDeg):
         self.top_graphs = []
@@ -12,6 +16,7 @@ class FGES:
         self.sorted_arrows = SortedListWithKey(key=lambda val: -val.bump)
         self.arrow_dict = {}
         self.arrow_index = 0
+        self.total_score = 0
         # Only needed for their `heuristic speedup`, it tells
         # you if two edges even have an effect on each other
         # the way we use this is effect_edges_graph[node] gives you 
@@ -35,84 +40,85 @@ class FGES:
 
 
 
-    def fes():
+    def fes(self):
         while(len(self.sorted_arrows) > 0):
-            maxBumpArrow = self.sorted_arrows.pop(0)
-            x = maxBumpArrow.a
-            y = maxBumpArrow.b
+            max_bump_arrow = self.sorted_arrows.pop(0)
+            x = max_bump_arrow.a
+            y = max_bump_arrow.b
 
-            if adjacent(self.graph, x, y):
+            if graph_util.adjacent(self.graph, x, y):
                 continue
 
-            naYX = getNaYX(g, x, y)
+            naYX = graph_util.get_na_y_x(self.graph, x, y)
 
             # TODO: max degree checks
 
-            if maxBumpArrow.naYX != naYX:
+            if max_bump_arrow.naYX != naYX:
                 continue
 
-            if not getTNeighbors(g, x, y).issuperset(maxBumpArrow.hOrT):
+            if not graph_util.get_t_neighbors(self.graph, x, y).issuperset(max_bump_arrow.hOrT):
                 continue
 
-            if not validInsert(x, y, maxBumpArrow.hOrT, naYX):
+            if not self.valid_insert(x, y, max_bump_arrow.hOrT, naYX):
                 continue
 
-            T = maxBumpArrow.hOrT
-            bump = maxBumpArrow.bump
+            T = max_bump_arrow.hOrT
+            bump = max_bump_arrow.bump
 
             #TODO: Insert should return a bool that we check here
             self.insert(self.graph, x, y, T)
 
-            self.totalScore += bump
+            self.total_score += bump
 
-            visitedNodes = reapplyOrientation(x, y, null)
-            toProcess = set({})
+            visited_nodes = self.reapply_orientation(x, y, None)
+            to_process = set({})
 
             # check whether the (undirected) neighbors of each node in 
-            # visitedNodes changed compared to stored neighbors
-            for node in visitedNodes:
+            # visited_nodes changed compared to stored neighbors
+            for node in visited_nodes:
                 # gets undirected neighbors 
-                newNeighbors = neighbors(self.graph, node)
+                new_neighbors = graph_util.neighbors(self.graph, node)
                 stored_neighbors = self.stored_neighbors[node]
-                if stored_neighbors != newNeighbors:
-                    toProcess.add(node)
+                if stored_neighbors != new_neighbors:
+                    to_process.add(node)
 
-            toProcess.add(x)
-            toProcess.add(y)
+            to_process.add(x)
+            to_process.add(y)
 
             #TODO: storeGraph()
 
-            reevaluateForward(toProcess, maxBumpArrow)
+            self.reevaluate_forward(to_process, max_bump_arrow)
 
 
-    def reevaluateForward(self, toProcess, arrow):
+    def reevaluate_forward(self, to_process, arrow):
         #TODO: This leverages effect_edges_graph
-        for node in toProcess:
-            nzero_effect_nodes = effect_edges_graph[x]
+        for node in to_process:
+            nzero_effect_nodes = self.effect_edges_graph[node]
 
             for w in nzero_effect_nodes:
                 if w == node: 
                     continue 
-                if adjacent(self.graph, node, w):
-                    self.clearArrow(w, node)
-                    self.calcArrowsForward(w, node)
+                if graph_util.adjacent(self.graph, node, w):
+                    self.clear_arrow(w, node)
+                    # self.calcArrowsForward(w, node)
 
-    def reapplyOrientation(self, x, y, newArrows):
-        #TODO: Not sure what newArrows does here, since it is passed as null
+    def reapply_orientation(self, x, y, new_arrows):
+        #TODO: Not sure what new_arrows does here, since it is passed as null
         #in fes(), but it should (for some reason) be a list of nodes (not arrows!)
-        toProcess = set([x, y])
-        if newArrows != null:
-            toProcess.append(newArrows)
+        to_process = set([x, y])
+        if new_arrows is not None:
+            to_process.update(new_arrows)
 
     def meekOrientRestricted(self):
         #TODO: This seems like it uses knowledge to re-orient some edges?
         pass
 
 
-    def validInsert(x, y, T, naYX):
+    def valid_insert(self, x, y, T, naYX):
         union = T
         union.append(naYX)
-        return is_clique(g, union) and not existsUnblockedSemiDirectedPath(y, x, union, self.cycle_bound)
+        return graph_util.is_clique(self.graph, union) and \
+            not graph_util.exists_unblocked_semi_directed_path(self.graph, y, x, union, self.cycle_bound)
 
     #TODO: initialzeForwardEdgesFromExistingGraph
 
@@ -130,8 +136,9 @@ class FGES:
                     #The java code here keeps track of an edgeEffectsGraph
                     #where X--Y means that X and Y have a non-zero effect
                     #on each other (?)
-                    self.addArrow(a, b, [], set([]), bump)
-                    self.addArrow(b, a, [], set([]), bump)
+                    pass
+                    # self.addArrow(a, b, [], set([]), bump)
+                    # self.addArrow(b, a, [], set([]), bump)
 
 
     def insert(self, graph, x, y, T):
@@ -146,15 +153,15 @@ class FGES:
         graph.add_edge(x, y)
 
         for node in T:
-            undir_to_dir(graph, node, y)
+            graph_util.undir_to_dir(graph, node, y)
 
 
     def delete(self, graph, x, y, H):
-        self.remove_all_edges(graph, x, y)
+        # self.remove_all_edges(graph, x, y)
 
         for node in H:
-            undir_to_dir(graph, y, node)
-            undir_to_dir(graph, x, node)
+            graph_util.undir_to_dir(graph, y, node)
+            graph_util.undir_to_dir(graph, x, node)
 
     def addArrow(self, a, b, naYX, hOrT, bump):
         a = Arrow(a, b, naYX, hOrT, bump, self.arrow_index)
@@ -162,13 +169,13 @@ class FGES:
 
         pair = (a, b)
         if self.arrow_dict.get(pair) is None:
-            self.arrow_dict[pair] = arrow
+            self.arrow_dict[pair] = a
 
-        self.arrow_dict[pair].append(arrow)
+        self.arrow_dict[pair].append(a)
 
         self.arrow_index += 1
 
-    def clearArrow(self, a, b):
+    def clear_arrow(self, a, b):
         pair = (a, b)
         if self.arrow_dict.get(pair) is not None:
             self.arrow_dict[pair] = None 
@@ -182,43 +189,44 @@ class FGES:
         else:
             self.stored_neighbors[b].add(a)
 
-        naYX = getNaYX(self.graph, a, b)
-        _naYX = list(naYX)
+        na_y_x = graph_util.get_na_y_x(self.graph, a, b)
+        _na_y_x= list(na_y_x)
 
-        if is_clique(self.graph, naYX):
+        if graph_util.is_clique(self.graph, na_y_x):
             return 
         
-        tNeighbors = getTNeighbors(self.graph, a, b)
-        lenT = len(tNeighbors)
+        t_neighbors = graph_util.get_t_neighbors(self.graph, a, b)
+        len_T = len(t_neighbors)
 
-        previousCliques = set() # set of sets of nodes
-        previousCliques.add(set()) 
+        previous_cliques = set() # set of sets of nodes
+        previous_cliques.add(set()) 
 
-        newCliques = set() # set of sets of nodes
+        new_cliques = set() # set of sets of nodes
 
-        for i in range(lenT):
+        for i in range(len_T):
 
-            choices = itertools.combinations(range(0, lenT), i)
+            choices = itertools.combinations(range(0, len_T), i)
 
             for choice in choices: 
-                diff = set([_naYX[i] for c in choice])
-                h = set(_naYX)
+                diff = set([_na_y_x[i] for c in choice])
+                h = set(na_y_x)
                 h = h.difference(diff)
 
-                bump = deleteEval(a, b, diff, naYx)
+                # bump = delete_eval(a, b, diff, naYx)
+                bump = 0.0
 
                 if bump > 0.0:
-                    self.addArrow(a, b, naYX, h, bump)
+                    self.addArrow(a, b, na_y_x, h, bump)
 
 
 
 
 class Arrow:
 
-    def __init__(a, b, naYX, hOrT, bump, arrow_index):
+    def __init__(self, a, b, naYX, hOrT, bump, arrow_index):
         self.a = a
         self.b = b
-        self.naYX = naYX
-        self.hOrT = hOrT
+        self.na_y_x = naYX
+        self.h_or_t = hOrT
         self.bump = bump
         self.index = arrow_index

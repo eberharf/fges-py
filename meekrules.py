@@ -1,13 +1,12 @@
-
 class MeekRules:
-    def __init__(self, undirectUnforcedEdges = True):
+    def __init__(self, undirect_unforced_edges = True):
         # Unforced parents should be undirected before orienting
-        self.undirectUnforcedEdges = undirectUnforcedEdges
-        self.nodeSubset = {}
+        self.undirect_unforced_edges = undirect_unforced_edges
+        self.node_subset = {}
 
-def orientImplied(graph, nodeSubset):
-    self.nodeSubset = nodeSubset
-    
+    def orient_implied(self, graph, node_subset):
+        self.node_subset = node_subset
+        
 
-def orientUsingMeekRulesLocally(knowledge, graph):
-    oriented = set({})
+    def orient_using_meek_rules_locally(self, knowledge, graph):
+        oriented = set({})

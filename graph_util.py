@@ -1,5 +1,5 @@
-import networkx as nx
 import queue
+import networkx as nx
 
 def add_undir_edge(g, x, y):
     g.add_edge(x, y)
@@ -33,37 +33,37 @@ def adjacent(g, x, y):
         return True 
     return False
 
-def neighbors(g, x, y):
+def undir_edge_neighbors(g, x, y):
     return has_undir_edge(g, x, y)
 
 def neighbors(g, x):
-    potentialNeighbors = nx.all_neighbors(g, t)
-    neighbors = set({})
+    potentialNeighbors = nx.all_neighbors(g, x) #TODO: Check this call
+    resulting_neighbors = set({})
     for pNode in potentialNeighbors:
-        if neighbors(g, x, pNode):
-            neighbors.add(pNode)
+        if undir_edge_neighbors(g, x, pNode):
+            resulting_neighbors.add(pNode)
 
-    return neighbors
+    return resulting_neighbors
 
-def getNaYX(g, x, y):
-    nayx = []
+def get_na_y_x(g, x, y):
+    na_y_x = []
     all_y_neighbors = set(nx.all_neighbors(g, y))
 
     for z in all_y_neighbors:
         if has_undir_edge(g, z, y):
             if adjacent(g, z, x):
-                nayx.append(z)
+                na_y_x.append(z)
 
-    return nayx
+    return na_y_x
 
-def is_clique(g, nodeSet):
-    for node in nodeSet:
-        for otherNode in nodeSet:
-            if node != otherNode and not adjacent(g, node, otherNode):
+def is_clique(g, node_set):
+    for node in node_set:
+        for other_node in node_set:
+            if node != other_node and not adjacent(g, node, other_node):
                 return False 
     return True
 
-def getTNeighbors(g, x, y):
+def get_t_neighbors(g, x, y):
     t = set([])
     all_y_neighbors = set(nx.all_neighbors(g, y))
 
@@ -71,18 +71,18 @@ def getTNeighbors(g, x, y):
         if has_undir_edge(g, z, y):
             if adjacent(g, z, x):
                 continue
-            t.append(z)
+            t.add(z)
 
     return t
 
-def existsUnblockedSemiDirectedPath(g, origin, dest, condSet, bound):
+def exists_unblocked_semi_directed_path(g, origin, dest, cond_set, bound):
     if bound == -1:
         bound = 1000
 
-    q = Queue()
+    q = queue.Queue()
     v = set()
     q.put(origin)
-    v.append(origin)
+    v.add(origin)
 
     e = None 
     distance = 0
@@ -103,13 +103,13 @@ def existsUnblockedSemiDirectedPath(g, origin, dest, condSet, bound):
             if c is None:
                 continue 
 
-            if condSet.contains(c):
+            if c in cond_set:
                 continue 
 
             if c == dest:
                 return True 
 
-            if not v.contains(c):
+            if not c in v:
                 v.add(c)
                 q.put(c)
 
