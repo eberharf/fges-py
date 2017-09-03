@@ -1,0 +1,8 @@
+__pycache__/
+.vscode
+.Python
+*.json
+include/
+share/
+lib/
+bin/
