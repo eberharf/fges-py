@@ -36,6 +36,9 @@ def adjacent(g, x, y):
 def undir_edge_neighbors(g, x, y):
     return has_undir_edge(g, x, y)
 
+def adjacent_nodes(g, x):
+    return nx.all_neighbors(g, x) #TODO: Check that this is the correct adjacency
+
 def neighbors(g, x):
     potentialNeighbors = nx.all_neighbors(g, x) #TODO: Check this call
     resulting_neighbors = set({})
@@ -74,6 +77,9 @@ def get_t_neighbors(g, x, y):
             t.add(z)
 
     return t
+
+def remove_edge(g, x, y):
+    g.remove_edge(x, y)
 
 def exists_unblocked_semi_directed_path(g, origin, dest, cond_set, bound):
     if bound == -1:

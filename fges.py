@@ -11,6 +11,7 @@ class FGES:
 
     def __init__(self, variables, score, maxDeg):
         self.top_graphs = []
+        # List<Node> --> list of variables, in order 
         self.variables = variables
         self.score = score
         self.sorted_arrows = SortedListWithKey(key=lambda val: -val.bump)
@@ -49,24 +50,26 @@ class FGES:
             if graph_util.adjacent(self.graph, x, y):
                 continue
 
-            naYX = graph_util.get_na_y_x(self.graph, x, y)
+            na_y_x = graph_util.get_na_y_x(self.graph, x, y)
 
             # TODO: max degree checks
 
-            if max_bump_arrow.naYX != naYX:
+            if max_bump_arrow.na_y_x != na_y_x:
                 continue
 
             if not graph_util.get_t_neighbors(self.graph, x, y).issuperset(max_bump_arrow.hOrT):
                 continue
 
-            if not self.valid_insert(x, y, max_bump_arrow.hOrT, naYX):
+            if not self.valid_insert(x, y, max_bump_arrow.hOrT, na_y_x):
                 continue
 
             T = max_bump_arrow.hOrT
             bump = max_bump_arrow.bump
 
             #TODO: Insert should return a bool that we check here
-            self.insert(self.graph, x, y, T)
+            inserted = self.insert(self.graph, x, y, T)
+            if (not inserted):
+                continue
 
             self.total_score += bump
 
@@ -102,6 +105,9 @@ class FGES:
                     self.clear_arrow(w, node)
                     # self.calcArrowsForward(w, node)
 
+    def knowledge(self):
+        return None
+
     def reapply_orientation(self, x, y, new_arrows):
         #TODO: Not sure what new_arrows does here, since it is passed as null
         #in fes(), but it should (for some reason) be a list of nodes (not arrows!)
@@ -109,14 +115,18 @@ class FGES:
         if new_arrows is not None:
             to_process.update(new_arrows)
 
-    def meekOrientRestricted(self):
-        #TODO: This seems like it uses knowledge to re-orient some edges?
-        pass
+        return self.meek_orient_restricted(nodes, self.knowledge())
+
+    def meek_orient_restricted(self, graph, nodes, knowledge):
+        # Runs meek rules on the changed adjacencies
+        meek_rules = MeekRules()
+        meek_rules.orient_implied(graph, nodes)
+        return meek_rules.get_visited()
 
 
-    def valid_insert(self, x, y, T, naYX):
+    def valid_insert(self, x, y, T, na_y_x):
         union = T
-        union.append(naYX)
+        union.append(na_y_x)
         return graph_util.is_clique(self.graph, union) and \
             not graph_util.exists_unblocked_semi_directed_path(self.graph, y, x, union, self.cycle_bound)
 
@@ -136,9 +146,13 @@ class FGES:
                     #The java code here keeps track of an edgeEffectsGraph
                     #where X--Y means that X and Y have a non-zero effect
                     #on each other (?)
-                    pass
-                    # self.addArrow(a, b, [], set([]), bump)
-                    # self.addArrow(b, a, [], set([]), bump)
+                    # pass
+                    parent_node = self.variables[j]
+                    child_node = self.variables[i]
+                    self.add_arrow(parent_node, child_node, [], set([]), bump)
+                    self.add_arrow(child_node, parent_node, [], set([]), bump)
+
+        print("Initialized forward edges from empty graph")
 
 
     def insert(self, graph, x, y, T):
@@ -150,10 +164,20 @@ class FGES:
         Definition 12
 
         """
+        if graph_util.adjacent(graph, x, y):
+            return False
+
+        #TODO Bound Graph
+
+        # Adds directed edge
         graph.add_edge(x, y)
+
+        #TODO print number of edges
 
         for node in T:
             graph_util.undir_to_dir(graph, node, y)
+
+        return True
 
 
     def delete(self, graph, x, y, H):
@@ -163,8 +187,8 @@ class FGES:
             graph_util.undir_to_dir(graph, y, node)
             graph_util.undir_to_dir(graph, x, node)
 
-    def addArrow(self, a, b, naYX, hOrT, bump):
-        a = Arrow(a, b, naYX, hOrT, bump, self.arrow_index)
+    def add_arrow(self, a, b, na_y_x, h_or_t, bump):
+        a = Arrow(a, b, na_y_x, h_or_t, bump, self.arrow_index)
         self.sorted_arrows.add(a)
 
         pair = (a, b)
@@ -212,21 +236,21 @@ class FGES:
                 h = set(na_y_x)
                 h = h.difference(diff)
 
-                # bump = delete_eval(a, b, diff, naYx)
+                # bump = delete_eval(a, b, diff, na_y_x)
                 bump = 0.0
 
                 if bump > 0.0:
-                    self.addArrow(a, b, na_y_x, h, bump)
+                    self.add_arrow(a, b, na_y_x, h, bump)
 
 
 
 
 class Arrow:
 
-    def __init__(self, a, b, naYX, hOrT, bump, arrow_index):
+    def __init__(self, a, b, na_y_x, hOrT, bump, arrow_index):
         self.a = a
         self.b = b
-        self.na_y_x = naYX
+        self.na_y_x = na_y_x
         self.h_or_t = hOrT
         self.bump = bump
         self.index = arrow_index
