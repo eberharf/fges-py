@@ -16,6 +16,28 @@ def has_undir_edge(g, x, y):
         return True 
     return False
 
+#TODO: Don't call g.has_edge(...) at all, always call this
+def has_dir_edge(g, x, y):
+    if g.has_edge(x, y):
+        return True
+    else:
+        return False
+
+def is_unshielded_non_collider(g, node_a, node_b, node_c):
+    if (not adjacent(g, node_a, node_b)):
+        return False
+    
+    if (not adjacent(g, node_c, node_b)):
+        return False
+
+    if (adjacent(graph, node_a, node_c)):
+        return False 
+
+    if ()
+
+def is_ambiguous_triple(g, node_a, node_b, node_c):
+    
+
 def traverseSemiDirected(g, x, y):
     if has_undir_edge(g, x, y):
         return y

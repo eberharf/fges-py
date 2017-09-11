@@ -228,7 +228,8 @@ class FGES:
         new_cliques = set() # set of sets of nodes
 
         for i in range(len_T):
-
+            
+            #TODO: Check that this does the same thing as ChoiceGenerator
             choices = itertools.combinations(range(0, len_T), i)
 
             for choice in choices: 
