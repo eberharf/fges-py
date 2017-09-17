@@ -5,6 +5,9 @@ def add_undir_edge(g, x, y):
     g.add_edge(x, y)
     g.add_edge(y, x)
 
+def add_dir_edge(g, x, y):
+    g.add_edge(x, y)
+
 def undir_to_dir(g, x, y):
     """ Keep only x-> y """
     g.remove_edge(y, x)
@@ -18,7 +21,7 @@ def has_undir_edge(g, x, y):
 
 #TODO: Don't call g.has_edge(...) at all, always call this
 def has_dir_edge(g, x, y):
-    if g.has_edge(x, y):
+    if g.has_edge(x, y): # TODO: does this check x --> y ?
         return True
     else:
         return False
@@ -30,13 +33,21 @@ def is_unshielded_non_collider(g, node_a, node_b, node_c):
     if (not adjacent(g, node_c, node_b)):
         return False
 
-    if (adjacent(graph, node_a, node_c)):
+    if (adjacent(g, node_a, node_c)):
         return False 
 
-    if ()
+    # TODO Major: his is unimplemented!
+    if (is_ambiguous_triple(g, node_a, node_b, node_c)):
+        return False 
 
-def is_ambiguous_triple(g, node_a, node_b, node_c):
-    
+    return not (has_dir_edge(g, node_a, node_b) and has_dir_edge(g, node_c, node_b))
+
+def is_ambiguous_triple(g, node_a, node_b, node_c): 
+    # TODO: Actually write this. I'm having a tough time finding
+    # where this logic is implemented, because it seems like
+    # ambiguous triples is not populated for an EdgeListGraph that is 
+    # populated with just a List<Node>s
+    return False 
 
 def traverseSemiDirected(g, x, y):
     if has_undir_edge(g, x, y):
