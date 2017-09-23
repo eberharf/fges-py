@@ -13,6 +13,13 @@ def undir_to_dir(g, x, y):
     g.remove_edge(y, x)
     assert(g.has_edge(x, y))
 
+def get_parents(g, x):
+    parents = []
+    for node in adjacent_nodes(g, x):
+        if has_dir_edge(g, node, x):
+            parents.append(node)
+    return parents
+
 def has_undir_edge(g, x, y):
     """ undir edge is x <-> y """
     if g.has_edge(x, y) and g.has_edge(y, x):
@@ -100,16 +107,19 @@ def is_clique(g, node_set):
     return True
 
 def get_t_neighbors(g, x, y):
-    t = set([])
+    t = []
     all_y_neighbors = set(nx.all_neighbors(g, y))
 
     for z in all_y_neighbors:
         if has_undir_edge(g, z, y):
             if adjacent(g, z, x):
                 continue
-            t.add(z)
+            t.append(z)
 
     return t
+
+def is_kite(g, a, d, b, c):
+    return has_undir_edge(g, d, c) and has_undir_edge(g, d, b) and has_dir_edge(g, b, a) and has_dir_edge(g, c, a) and has_undir_edge(g, d, a)
 
 def remove_edge(g, x, y):
     g.remove_edge(x, y)
