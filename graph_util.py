@@ -28,7 +28,7 @@ def has_undir_edge(g, x, y):
 
 #TODO: Don't call g.has_edge(...) at all, always call this
 def has_dir_edge(g, x, y):
-    if g.has_edge(x, y): # TODO: does this check x --> y ?
+    if g.has_edge(x, y) and not g.has_edge(y, x): # TODO: does this check x --> y ?
         return True
     else:
         return False
@@ -48,6 +48,9 @@ def is_unshielded_non_collider(g, node_a, node_b, node_c):
         return False 
 
     return not (has_dir_edge(g, node_a, node_b) and has_dir_edge(g, node_c, node_b))
+
+def is_def_collider(g, node_1, node_2, node_3):
+    return has_dir_edge(g, node_1, node_2) and has_dir_edge(node_3, node_2)
 
 def is_ambiguous_triple(g, node_a, node_b, node_c): 
     # TODO: Actually write this. I'm having a tough time finding
@@ -120,6 +123,9 @@ def get_t_neighbors(g, x, y):
 
 def is_kite(g, a, d, b, c):
     return has_undir_edge(g, d, c) and has_undir_edge(g, d, b) and has_dir_edge(g, b, a) and has_dir_edge(g, c, a) and has_undir_edge(g, d, a)
+
+def get_common_adjacents(g, x, y):
+    return adjacent_nodes(g, x) & adjacent_nodes(g, y)
 
 def remove_edge(g, x, y):
     g.remove_edge(x, y)

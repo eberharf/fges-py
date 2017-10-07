@@ -31,6 +31,7 @@ class FGES:
         self.cycle_bound = -1
         self.stored_neighbors = {}
         self.graph = None
+        self.removed_edges = set()
 
     def search(self):
         self.graph = nx.DiGraph()
@@ -39,7 +40,18 @@ class FGES:
 
         #TODO: self.addRequiredEdges()
 
-        self.initializeForwardEdgesFromEmptyGraph()
+        self.initialize_forward_edges_from_empty_graph()
+
+        self.mode = "heuristic"
+        fes()
+        bes()
+
+        self.mode = "covernoncolliders"
+        fes()
+        bes()
+
+        return self.graph 
+        
 
     def fes(self):
         while(len(self.sorted_arrows) > 0):
@@ -93,7 +105,64 @@ class FGES:
             self.reevaluate_forward(to_process, max_bump_arrow)
     
     def bes(self):
-        pass
+        self.sorted_arrows = SortedListWithKey(key=lambda val: -val.bump)
+        self.arrow_dict = {} 
+        self.stored_neighbors = {}
+
+        self.initialize_arrows_backwards()
+
+        while len(sorted_arrows) > 0:
+            arrow = sorted_arrows.pop(0)
+            x = arrow.a
+            y = arrow.b 
+
+            if (not arrow.na_y_x is graph_util.get_na_y_x(self.graph, x, y)):
+                continue
+            
+            if (not graph_util.adjacent(self.graph, x, y)):
+                continue 
+            
+            if (graph_util.has_dir_edge(self.graph, y, x)): # edge points towards x
+                continue 
+            
+            diff = set(arrow.na_y_x)
+            diff = diff - arrow.h_or_t
+
+            if (not self.valid_delete(x, y, arrow.h_or_t, arrow.na_y_x))
+                continue 
+            
+            H = arrow.h_or_t 
+            bump = arrow
+
+            self.delete(self.graph, x, y, H)
+
+            meek_rules = MeekRules()
+            meek_rules.orient_implied_subset(self.graph, set(x))
+            meek_rules.orient_implied_subset(self.graph, set(y))
+
+            self.total_score += bump 
+            self.clear_arrow(x, y)
+
+            visited = self.reapply_orientation(x, y, H)
+
+            to_process = set()
+
+            for node in visited: 
+                neighbors = graph_util.neighbors(self.graph, node)
+                str_neighbors = self.stored_neighbors[node]
+
+                if stored_neighbors != new_neighbors:
+                    to_process.update(node)
+            
+            to_process.add(x)
+            to_process.add(y)
+            to_process.update(graph_util.get_common_adjacents(self.graph, x, y))
+
+            #TODO: Store graph
+            self.reevaluate_backward(to_process)
+
+
+
         
     def initialize_arrows_backwards(self):
         for (node_1, node_2) in self.graph.edges():
@@ -137,14 +206,46 @@ class FGES:
     def reevaluate_forward(self, to_process, arrow):
         # TODO: This leverages effect_edges_graph
         for node in to_process:
-            nzero_effect_nodes = self.effect_edges_graph[node]
+            if self.mode == "heuristic":
+                nzero_effect_nodes = self.effect_edges_graph[node]
+            elif self.mode == "covernoncolliders":
+                g = set()
+                for n in graph_util.adjacent_nodes(self.graph, node):
+                    for m in graph_util.adjacent_nodes(self.graph, n):
+                        if graph_util.adjacent(self.graph, n, m):
+                            continue 
+                        
+                        if graph_util.is_def_collider(self.graph, m, n, node):
+                            continue 
+
+                        g.update(m)
+                
+                nzero_effect_nodes = list(g)
 
             for w in nzero_effect_nodes:
                 if w == node:
                     continue
                 if graph_util.adjacent(self.graph, node, w):
                     self.clear_arrow(w, node)
-                    # self.calcArrowsForward(w, node)
+                    self.calculate_arrows_forward(w, node)
+    
+    def reevaluate_backward(self, to_process):
+        for node in to_process:
+            self.stored_neighbors[node] = graph_util.neighbors(node)
+            adjacent_nodes = graph_util.adjacent_nodes(node)
+
+            for adj_node in adjacent_nodes:
+                if (graph_util.has_dir_edge(self.graph, adj_node, node)):
+                    self.clear_arrow(adj_node, node)
+                    self.clear_arrow(node, adj_node)
+
+                    self.calculate_arrows_backward(adj_node, node)
+                else if graph_util.has_undir_edge(self.graph, adj_node, node):
+                    self.clear_arrow(adj_node, node)
+                    self.clear_arrow(node, adj_node)
+                    self.calculate_arrows_backward(adj_node, node)
+                    self.calculate_arrows_backward(node, adj_node)
+
 
     def knowledge(self):
         return None
@@ -170,8 +271,45 @@ class FGES:
         return graph_util.is_clique(self.graph, union) and \
             not graph_util.exists_unblocked_semi_directed_path(
                 self.graph, y, x, union, self.cycle_bound)
+                
+    def valid_delete(self, x, y, H, na_y_x):
+        #TODO Knowledge
+        diff = set(na_y_x)
+        diff = diff - H
+        return graph_util.is_clique(self.graph, diff)
 
     #TODO: initialzeForwardEdgesFromExistingGraph
+
+    def initialize_two_step_edges(self, nodes):
+        for node in nodes:
+
+            g = set()
+
+            for n in graph_util.adjacent_nodes(self.graph, node):
+                for m in graph_util.adjacent_nodes(self.graph, n):
+
+                    if node == m:
+                        continue
+
+                    if graph_util.adjacent(self.graph, node, m):
+                        continue 
+
+                    if graph_util.is_def_collider(self.graph, m, n, node):
+                        continue 
+
+                    g.update(m)
+            
+            for x in g:
+                assert(x !== node)
+                #TODO: Knowledge
+
+                #TODO: Adjacencies
+
+                if (x, node) in self.removed_edges:
+                    continue 
+
+                self.calculate_arrows_forward(x, node)
+
 
     def initialize_forward_edges_from_empty_graph(self):
 
@@ -240,6 +378,7 @@ class FGES:
         for node in H:
             graph_util.undir_to_dir(graph, y, node)
             graph_util.undir_to_dir(graph, x, node)
+            self.removed_edges.add((x, y))
 
     def add_arrow(self, a, b, na_y_x, h_or_t, bump):
         a = Arrow(a, b, na_y_x, h_or_t, bump, self.arrow_index)

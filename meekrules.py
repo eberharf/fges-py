@@ -1,5 +1,5 @@
-import graph_util
 import itertools
+import graph_util
 
 
 class MeekRules:
