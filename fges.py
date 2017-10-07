@@ -4,6 +4,15 @@ import graph_util
 from sortedcontainers import SortedListWithKey
 from meekrules import MeekRules
 
+class Arrow:
+
+    def __init__(self, a, b, na_y_x, hOrT, bump, arrow_index):
+        self.a = a
+        self.b = b
+        self.na_y_x = na_y_x
+        self.h_or_t = hOrT
+        self.bump = bump
+        self.index = arrow_index
 
 class FGES:
     """
@@ -43,12 +52,12 @@ class FGES:
         self.initialize_forward_edges_from_empty_graph()
 
         self.mode = "heuristic"
-        fes()
-        bes()
+        self.fes()
+        self.bes()
 
         self.mode = "covernoncolliders"
-        fes()
-        bes()
+        self.fes()
+        self.bes()
 
         return self.graph 
         
@@ -111,8 +120,8 @@ class FGES:
 
         self.initialize_arrows_backwards()
 
-        while len(sorted_arrows) > 0:
-            arrow = sorted_arrows.pop(0)
+        while len(self.sorted_arrows) > 0:
+            arrow = self.sorted_arrows.pop(0)
             x = arrow.a
             y = arrow.b 
 
@@ -128,7 +137,7 @@ class FGES:
             diff = set(arrow.na_y_x)
             diff = diff - arrow.h_or_t
 
-            if (not self.valid_delete(x, y, arrow.h_or_t, arrow.na_y_x))
+            if (not self.valid_delete(x, y, arrow.h_or_t, arrow.na_y_x)):
                 continue 
             
             H = arrow.h_or_t 
@@ -151,7 +160,7 @@ class FGES:
                 neighbors = graph_util.neighbors(self.graph, node)
                 str_neighbors = self.stored_neighbors[node]
 
-                if stored_neighbors != new_neighbors:
+                if str_neighbors != neighbors:
                     to_process.update(node)
             
             to_process.add(x)
@@ -160,9 +169,6 @@ class FGES:
 
             #TODO: Store graph
             self.reevaluate_backward(to_process)
-
-
-
         
     def initialize_arrows_backwards(self):
         for (node_1, node_2) in self.graph.edges():
@@ -240,7 +246,7 @@ class FGES:
                     self.clear_arrow(node, adj_node)
 
                     self.calculate_arrows_backward(adj_node, node)
-                else if graph_util.has_undir_edge(self.graph, adj_node, node):
+                elif graph_util.has_undir_edge(self.graph, adj_node, node):
                     self.clear_arrow(adj_node, node)
                     self.clear_arrow(node, adj_node)
                     self.calculate_arrows_backward(adj_node, node)
@@ -300,7 +306,7 @@ class FGES:
                     g.update(m)
             
             for x in g:
-                assert(x !== node)
+                assert(x is not node)
                 #TODO: Knowledge
 
                 #TODO: Adjacencies
@@ -465,16 +471,5 @@ class FGES:
                         self.add_arrow(a, b, na_y_x, T, bump)
             
                 previous_cliques = new_cliques
-                new_cliques = set()
-        
+                new_cliques = set()      
         outer_loop()
-
-class Arrow:
-
-    def __init__(self, a, b, na_y_x, hOrT, bump, arrow_index):
-        self.a = a
-        self.b = b
-        self.na_y_x = na_y_x
-        self.h_or_t = hOrT
-        self.bump = bump
-        self.index = arrow_index
