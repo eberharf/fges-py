@@ -15,6 +15,7 @@ class FGES:
         self.top_graphs = []
         # List<Node> --> list of variables, in order
         self.variables = variables
+        self.node_dict = {} #hash_indices
         self.score = score
         self.sorted_arrows = SortedListWithKey(key=lambda val: -val.bump)
         self.arrow_dict = {}
@@ -90,6 +91,48 @@ class FGES:
             #TODO: storeGraph()
 
             self.reevaluate_forward(to_process, max_bump_arrow)
+    
+    def bes(self):
+        pass
+        
+    def initialize_arrows_backwards(self):
+        for (node_1, node_2) in self.graph.edges():
+            
+            self.clear_arrow(node_1, node_2)
+            self.clear_arrow(node_2, node_1)
+            
+            #TODO: Confirm this is equivalent
+            self.calculate_arrows_backward(node_1, node_2)
+
+            self.stored_neighbors[node_1] = graph_util.neighbors(self.graph, node_1)
+            self.stored_neighbors[node_2] = graph_util.neighbors(self.graph, node_2)
+
+    def calculate_arrows_backward(self, a, b):
+        na_y_x = graph_util.get_na_y_x(self.graph, a, b)
+        _na_y_x = list(na_y_x)
+        _depth  = len(_na_y_x)
+
+        for i in range(_depth):
+            choices = itertools.combinations(range(0, _depth), i)
+            for choice in choices:
+                diff = set([_na_y_x[k] for k in choice])
+                h = set(_na_y_x)
+                h = h - diff 
+
+                bump = self.delete_eval(a, b, diff, na_y_x, self.node_dict)
+
+                if bump > 0:
+                    self.add_arrow(a, b, na_y_x, h, bump)
+            
+    
+    def clear_arrow(self, x, y):
+        del self.arrow_dict[(x, y)]
+        
+    def delete_eval(self, x, y, diff, na_y_x, node_dict):
+        a = set(diff)
+        a.update(graph_util.get_parents(self.graph, y))
+        a = a - set(x)
+        return -1 * self.score_graph_change(y, a, x, node_dict)
 
     def reevaluate_forward(self, to_process, arrow):
         # TODO: This leverages effect_edges_graph
@@ -113,12 +156,12 @@ class FGES:
         if new_arrows is not None:
             to_process.update(new_arrows)
 
-        return self.meek_orient_restricted(nodes, self.knowledge())
+        return self.meek_orient_restricted(self.graph, to_process, self.knowledge())
 
     def meek_orient_restricted(self, graph, nodes, knowledge):
         # Runs meek rules on the changed adjacencies
         meek_rules = MeekRules(undirect_unforced_edges=True)
-        meek_rules.orient_implied(graph, nodes)
+        meek_rules.orient_implied_subset(graph, nodes)
         return meek_rules.get_visited()
 
     def valid_insert(self, x, y, T, na_y_x):
@@ -130,7 +173,7 @@ class FGES:
 
     #TODO: initialzeForwardEdgesFromExistingGraph
 
-    def initializeForwardEdgesFromEmptyGraph(self):
+    def initialize_forward_edges_from_empty_graph(self):
 
         neighbors = []
         # TODO: Parallelize this in chunks, as the java code does this with
@@ -223,7 +266,7 @@ class FGES:
 
         parent_indices = list()
         for parent_node in parents:
-            parent_indices.append(node_dict[parent])
+            parent_indices.append(node_dict[parent_node])
 
         return self.score.local_score_diff_parents(node_dict[x], y_index, parent_indices)
 
@@ -245,12 +288,11 @@ class FGES:
         t_neighbors = graph_util.get_t_neighbors(self.graph, a, b)
         len_T = len(t_neighbors)
 
-        previous_cliques = set()  # set of sets of nodes
-        previous_cliques.add(set())
-
-        new_cliques = set()  # set of sets of nodes
 
         def outer_loop():
+            previous_cliques = set()  # set of sets of nodes
+            previous_cliques.add(set())
+            new_cliques = set()  # set of sets of nodes
             for i in range(len_T):
 
                 # TODO: Check that this does the same thing as ChoiceGenerator
@@ -278,16 +320,15 @@ class FGES:
 
                     new_cliques.add(union)
 
-                # diff = set([_na_y_x[i] for c in choice])
-                # h = set(na_y_x)
-                # h = h.difference(diff)
+                    bump = self.insert_eval(a, b, T, na_y_x, self.node_dict)
 
-                # # bump = delete_eval(a, b, diff, na_y_x)
-                # bump = 0.0
-
-                # if bump > 0.0:
-                #     self.add_arrow(a, b, na_y_x, h, bump)
-
+                    if bump > 0:
+                        self.add_arrow(a, b, na_y_x, T, bump)
+            
+                previous_cliques = new_cliques
+                new_cliques = set()
+        
+        outer_loop()
 
 class Arrow:
 

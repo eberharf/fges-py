@@ -107,14 +107,14 @@ def is_clique(g, node_set):
     return True
 
 def get_t_neighbors(g, x, y):
-    t = []
+    t = set([])
     all_y_neighbors = set(nx.all_neighbors(g, y))
 
     for z in all_y_neighbors:
         if has_undir_edge(g, z, y):
             if adjacent(g, z, x):
                 continue
-            t.append(z)
+            t.update(z)
 
     return t
 
