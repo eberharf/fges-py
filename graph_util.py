@@ -80,7 +80,7 @@ def undir_edge_neighbors(g, x, y):
     return has_undir_edge(g, x, y)
 
 def adjacent_nodes(g, x):
-    return nx.all_neighbors(g, x) #TODO: Check that this is the correct adjacency
+    return list(nx.all_neighbors(g, x)) #TODO: Check that this is the correct adjacency
 
 def neighbors(g, x):
     potentialNeighbors = nx.all_neighbors(g, x) #TODO: Check this call
@@ -128,7 +128,10 @@ def get_common_adjacents(g, x, y):
     return adjacent_nodes(g, x) & adjacent_nodes(g, y)
 
 def remove_edge(g, x, y):
-    g.remove_edge(x, y)
+    if g.has_edge(x, y):
+        g.remove_edge(x, y)
+    else:
+        print("Warning: removing an edge that doesn't exist", x, y)
 
 def exists_unblocked_semi_directed_path(g, origin, dest, cond_set, bound):
     if bound == -1:

@@ -9,7 +9,7 @@ class SEMBicScore:
         """ Initialize the SEMBicScore. Assume that each 
         row is a sample point, and each column is a variable
         """
-        self.cov = np.cov(dataset, rowVar=False)
+        self.cov = np.cov(dataset, rowvar=False)
         self.sample_size = sample_size
         self.penalty = penalty_discount
 
@@ -17,17 +17,20 @@ class SEMBicScore:
         # TODO: Handle singular matrix
         """ `node` is an int index """
         variance = self.cov[node][node]
+        print(variance)
 
         # np.ix_(rowIndices, colIndices)
+    
         covxx = self.cov[np.ix_(parents, parents)]
         covxx_inv = inv(covxx)
 
-        covxy = self.cov[np.ix_(parents, node)]
+        covxy = self.cov[np.ix_(parents, [node])]
 
         b = np.dot(covxx_inv, covxy)
 
         variance -= np.dot(covxy, b)
 
+        print(variance)
         if variance <= 0:
             return None
 
@@ -50,7 +53,8 @@ class SEMBicScore:
         return bic
 
     def local_score_diff_parents(self, node1, node2, parents):
+        print("parents:" + parents)
         return self.local_score(node2, parents + node1) - self.local_score(node2, parents)
 
     def local_score_diff(self, node1, node2):
-        return self.local_score(node2, node1) - self.local_score_no_parents(node2)
+        return self.local_score(node2, [node1]) - self.local_score_no_parents(node2)

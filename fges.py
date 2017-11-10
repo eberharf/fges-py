@@ -18,6 +18,16 @@ class FGES:
     """
     Python FGES implementation, heavily inspired by tetrad 
     https://github.com/cmu-phil/tetrad
+
+    TODOs:
+
+    There is a way to set preset adjacencies in the tetrad algorithm,
+    which constrains the edges that can actually be set. That's not
+    implemented here.
+
+    Symmetric First Step unimplemented.
+
+    
     """
 
     def __init__(self, variables, score, maxDeg):
@@ -45,6 +55,7 @@ class FGES:
     def search(self):
         self.graph = nx.DiGraph()
         self.graph.add_nodes_from(self.variables)
+        print("Created Graph with nodes: ", self.graph.nodes())
         # for now, there is no knowledge and faithfulness is assumed
 
         #TODO: self.addRequiredEdges()
@@ -63,6 +74,7 @@ class FGES:
         
 
     def fes(self):
+        print("FES")
         while(len(self.sorted_arrows) > 0):
             max_bump_arrow = self.sorted_arrows.pop(0)
             x = max_bump_arrow.a
@@ -78,13 +90,13 @@ class FGES:
             if max_bump_arrow.na_y_x != na_y_x:
                 continue
 
-            if not graph_util.get_t_neighbors(self.graph, x, y).issuperset(max_bump_arrow.hOrT):
+            if not graph_util.get_t_neighbors(self.graph, x, y).issuperset(max_bump_arrow.h_or_t):
                 continue
 
-            if not self.valid_insert(x, y, max_bump_arrow.hOrT, na_y_x):
+            if not self.valid_insert(x, y, max_bump_arrow.h_or_t, na_y_x):
                 continue
 
-            T = max_bump_arrow.hOrT
+            T = max_bump_arrow.h_or_t
             bump = max_bump_arrow.bump
 
             # TODO: Insert should return a bool that we check here
@@ -102,7 +114,7 @@ class FGES:
             for node in visited_nodes:
                 # gets undirected neighbors
                 new_neighbors = graph_util.neighbors(self.graph, node)
-                stored_neighbors = self.stored_neighbors[node]
+                stored_neighbors = self.stored_neighbors.get(node)
                 if stored_neighbors != new_neighbors:
                     to_process.add(node)
 
@@ -114,6 +126,7 @@ class FGES:
             self.reevaluate_forward(to_process, max_bump_arrow)
     
     def bes(self):
+        print("BES")
         self.sorted_arrows = SortedListWithKey(key=lambda val: -val.bump)
         self.arrow_dict = {} 
         self.stored_neighbors = {}
@@ -213,7 +226,7 @@ class FGES:
         # TODO: This leverages effect_edges_graph
         for node in to_process:
             if self.mode == "heuristic":
-                nzero_effect_nodes = self.effect_edges_graph[node]
+                nzero_effect_nodes = self.effect_edges_graph.get(node)
             elif self.mode == "covernoncolliders":
                 g = set()
                 for n in graph_util.adjacent_nodes(self.graph, node):
@@ -227,13 +240,13 @@ class FGES:
                         g.update(m)
                 
                 nzero_effect_nodes = list(g)
-
-            for w in nzero_effect_nodes:
-                if w == node:
-                    continue
-                if graph_util.adjacent(self.graph, node, w):
-                    self.clear_arrow(w, node)
-                    self.calculate_arrows_forward(w, node)
+            if nzero_effect_nodes is not None:
+                for w in nzero_effect_nodes:
+                    if w == node:
+                        continue
+                    if graph_util.adjacent(self.graph, node, w):
+                        self.clear_arrow(w, node)
+                        self.calculate_arrows_forward(w, node)
     
     def reevaluate_backward(self, to_process):
         for node in to_process:
@@ -273,7 +286,7 @@ class FGES:
 
     def valid_insert(self, x, y, T, na_y_x):
         union = T
-        union.append(na_y_x)
+        union.update(na_y_x)
         return graph_util.is_clique(self.graph, union) and \
             not graph_util.exists_unblocked_semi_directed_path(
                 self.graph, y, x, union, self.cycle_bound)
@@ -324,6 +337,7 @@ class FGES:
         # the task framework
         for i in range(len(self.variables)):
             for j in range(i + 1, len(self.variables)):
+                self.stored_neighbors[i] = set()
                 bump = self.score.local_score_diff(j, i)
 
                 if bump > 0:
@@ -332,8 +346,10 @@ class FGES:
                     # where X--Y means that X and Y have a non-zero effect
                     # on each other (?)
                     # pass
-                    parent_node = self.variables[j]
-                    child_node = self.variables[i]
+                    # parent_node = self.variables[j]
+                    # child_node = self.variables[i]
+                    parent_node = j 
+                    child_node = i
                     self.add_arrow(parent_node, child_node, [], set([]), bump)
                     self.add_arrow(child_node, parent_node, [], set([]), bump)
 
@@ -387,12 +403,13 @@ class FGES:
             self.removed_edges.add((x, y))
 
     def add_arrow(self, a, b, na_y_x, h_or_t, bump):
+        print("Adding arrow with bump", bump)
         a = Arrow(a, b, na_y_x, h_or_t, bump, self.arrow_index)
         self.sorted_arrows.add(a)
 
         pair = (a, b)
         if self.arrow_dict.get(pair) is None:
-            self.arrow_dict[pair] = a
+            self.arrow_dict[pair] = [a]
 
         self.arrow_dict[pair].append(a)
 

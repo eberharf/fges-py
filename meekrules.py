@@ -1,5 +1,5 @@
-import itertools
 import graph_util
+import itertools
 
 
 class MeekRules:
@@ -14,7 +14,7 @@ class MeekRules:
     def orient_implied_subset(self, graph, node_subset):
         self.node_subset = node_subset
         self.visited.update(node_subset)
-        self.orient_using_meek_rules_locally(knowledge, graph)
+        self.orient_using_meek_rules_locally(None, graph)
 
     def orient_implied(self, graph):
         self.orient_implied_subset(graph, graph.nodes())
@@ -24,7 +24,8 @@ class MeekRules:
 
         if (self.undirect_unforced_edges):
             for node in self.node_subset:
-                self.undirect_unforced_edges(node, graph)
+                #TODO: undirect_unforced_edges
+                # self.undirect_unforced_edges(node, graph)
                 self.direct_stack.extend(
                     graph_util.adjacent_nodes(graph, node))
 
@@ -34,12 +35,16 @@ class MeekRules:
 
         last_node = self.direct_stack.pop()
         while last_node is not None:
-            if self.undirect_unforced_edges:
-                self.undirect_unforced_edges(last_node, graph)
+            #if self.undirect_unforced_edges:
+                #TODO: undirect_unforced_edges
+                #self.undirect_unforced_edges(last_node, graph)
 
             self.run_meek_rules(last_node, graph, knowledge)
-
-            last_node = self.direct_stack.pop()
+            
+            if len(self.direct_stack) > 0:
+                last_node = self.direct_stack.pop()
+            else:
+                last_node = None
 
     def run_meek_rules(self, node, graph, knowledge):
         self.run_meek_rule_one(node, graph, knowledge)
@@ -51,6 +56,7 @@ class MeekRules:
         """
                 Meek's rule R1: if a-->b, b---c, and a not adj to c, then a-->c
                 """
+        print("Running meek rule one", node)
         adjacencies = graph_util.adjacent_nodes(graph, node)
         if len(adjacencies) < 2:
             return
@@ -66,7 +72,7 @@ class MeekRules:
             self.r1_helper(node_c, node, node_a, graph, knowledge)
 
     def r1_helper(self, node_a, node_b, node_c, graph, knowledge):
-        if (not graph_util.adjacent(g, node_a, node_c) and graph_util.has_dir_edge(g, node_a, node_b) and graph_util.has_undir_edge(graph, node_b, node_c)):
+        if (not graph_util.adjacent(graph, node_a, node_c) and graph_util.has_dir_edge(graph, node_a, node_b) and graph_util.has_undir_edge(graph, node_b, node_c)):
             if (not graph_util.is_unshielded_non_collider(graph, node_a, node_b, node_c)):
                 return
 
@@ -82,6 +88,7 @@ class MeekRules:
         self.direct_stack.append(node_2)
 
     def run_meek_rule_two(self, node_b, graph, knowledge):
+        print("Running meek rule two", node_b)
         adjacencies = graph_util.adjacent_nodes(graph, node_b)
         if len(adjacencies) < 2:
             return
@@ -104,13 +111,14 @@ class MeekRules:
                 self.direct(a, c, graph)
 
     def run_meek_rule_three(self, node, graph, knowledge):
+        print("Running meek rule three", node)
         adjacencies = graph_util.adjacent_nodes(graph, node)
         if len(adjacencies) < 3:
             return
 
         for a_node in adjacencies:
             if (graph_util.has_undir_edge(graph, node, a_node)):
-                copy_adjacencies = adjacencies - a_node
+                copy_adjacencies = [a for a in adjacencies if a != a_node]
                 all_combinations = itertools.combinations(
                     range(0, len(copy_adjacencies)), 2)
 
