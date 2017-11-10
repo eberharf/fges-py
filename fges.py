@@ -21,20 +21,25 @@ class FGES:
 
     TODOs:
 
-    There is a way to set preset adjacencies in the tetrad algorithm,
+    - There is a way to set preset adjacencies in the tetrad algorithm,
     which constrains the edges that can actually be set. That's not
     implemented here.
 
-    Symmetric First Step unimplemented.
+    - Symmetric First Step unimplemented.
 
-    
     """
 
     def __init__(self, variables, score, maxDeg):
+        # TODO: This is only used in store_graph
         self.top_graphs = []
-        # List<Node> --> list of variables, in order
+
+        # List of the nodes, in order
         self.variables = variables
-        self.node_dict = {} #hash_indices
+        
+        # Meant to be a map from the node to its column in the dataset,
+        # but in this implementation, this should always be a map
+        # from x -> x, i.e. {1:1, 2:2, ...}
+        self.node_dict = {}
         self.score = score
         self.sorted_arrows = SortedListWithKey(key=lambda val: -val.bump)
         self.arrow_dict = {}
@@ -53,28 +58,36 @@ class FGES:
         self.removed_edges = set()
 
     def search(self):
+        """
+        The main entry point into the algorithm.
+        """
+        # Create an empty directed graph
         self.graph = nx.DiGraph()
+
         self.graph.add_nodes_from(self.variables)
         print("Created Graph with nodes: ", self.graph.nodes())
-        # for now, there is no knowledge and faithfulness is assumed
 
-        #TODO: self.addRequiredEdges()
+        # for now, there is no knowledge and faithfulness is assumed
+        # TODO: self.addRequiredEdges()
 
         self.initialize_forward_edges_from_empty_graph()
 
+        # Step 1: Run FES and BES with heuristic
+        # mode. The mode is used in reevaluate_forward
         self.mode = "heuristic"
         self.fes()
         self.bes()
 
+        # Step 1: Run FES and BES with covernoncolliders
+        # mode. The mode is used in reevaluate_forward
         self.mode = "covernoncolliders"
         self.fes()
         self.bes()
 
-        return self.graph 
-        
+        return self.graph
 
     def fes(self):
-        print("FES")
+        print("Running FES..")
         while(len(self.sorted_arrows) > 0):
             max_bump_arrow = self.sorted_arrows.pop(0)
             x = max_bump_arrow.a
@@ -331,29 +344,49 @@ class FGES:
 
 
     def initialize_forward_edges_from_empty_graph(self):
+        """
+        Initializes the state of the graph before executing fes()
+        This is called from search().
 
-        neighbors = []
-        # TODO: Parallelize this in chunks, as the java code does this with
-        # the task framework
+        TODO: 
+        - This seems easily parallelizable
+        - There is a check for symmetricFirstStep here, which essentially
+        adds the bump between child <-> parent instead of just parent <-> child.
+        - This code also checks for boundGraph, which directly enforces
+        what kind of edges can be `bound`. In effect, this is a type of background knowledge.
+
+        Unknowns:
+        - Confused by the same-reference emptySet() in the Java implementation for Arrow. Does that 
+        mean that if one gets modified, all will?
+        """
         for i in range(len(self.variables)):
             for j in range(i + 1, len(self.variables)):
                 self.stored_neighbors[i] = set()
                 bump = self.score.local_score_diff(j, i)
 
                 if bump > 0:
-                    # TODO:
-                    # The java code here keeps track of an edgeEffectsGraph
-                    # where X--Y means that X and Y have a non-zero effect
-                    # on each other (?)
-                    # pass
-                    # parent_node = self.variables[j]
-                    # child_node = self.variables[i]
+                    self.mark_nonzero_effect(i, j)
                     parent_node = j 
                     child_node = i
-                    self.add_arrow(parent_node, child_node, [], set([]), bump)
-                    self.add_arrow(child_node, parent_node, [], set([]), bump)
+                    self.add_arrow(parent_node, child_node, set(), set(), bump)
+                    self.add_arrow(child_node, parent_node, set(), set(), bump)
 
         print("Initialized forward edges from empty graph")
+
+    def mark_nonzero_effect(self, node_1, node_2):
+        """
+        Adds node_1 to the (instance-wide) effect edges list for node_2, 
+        and vice versa.
+        """
+        if self.effect_edges_graph.get(node_1) is None:
+            self.effect_edges_graph[node_1] = [node_2]
+        else:
+            self.effect_edges_graph[node_1].append(node_2)
+        
+        if self.effect_edges_graph.get(node_2) is None:
+            self.effect_edges_graph[node_2] = [node_1]
+        else:
+            self.effect_edges_graph[node_2].append(node_1)
 
     def insert_eval(self, x, y, T, na_y_x, node_dict):
         # node_dict is supposed to be a map from node --> index
@@ -410,8 +443,8 @@ class FGES:
         pair = (a, b)
         if self.arrow_dict.get(pair) is None:
             self.arrow_dict[pair] = [a]
-
-        self.arrow_dict[pair].append(a)
+        else:
+            self.arrow_dict[pair].append(a)
 
         self.arrow_index += 1
 
