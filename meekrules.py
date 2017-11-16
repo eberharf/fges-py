@@ -26,17 +26,19 @@ class MeekRules:
         if (self.undirect_unforced_edges):
             for node in self.node_subset:
                 #TODO: undirect_unforced_edges
-                # self.undirect_unforced_edges(node, graph)
+                self.undirect_unforced_edges_func(node, graph)
+                print("Adding")
                 self.direct_stack.extend(
                     graph_util.adjacent_nodes(graph, node))
 
-        print(self.node_subset)
-        print(self.direct_stack)
+        # print(self.node_subset)
 
         # TODO: Combine loops
         for node in self.node_subset:
             self.run_meek_rules(node, graph, knowledge)
         
+        print("Direct Stack:")
+        print(self.direct_stack)        
         print("past run meek rules loop")
 
         print(self.direct_stack)
@@ -54,6 +56,38 @@ class MeekRules:
                 last_node = self.direct_stack.pop()
             else:
                 last_node = None
+
+    def undirect_unforced_edges_func(self, node, graph):
+        parents_to_undirect = set()
+        node_parents = graph_util.get_parents(graph, node)
+
+        for parent in node_parents:
+            def inner_loop(parent):
+                for inner_parent in node_parents:
+                    if inner_parent is not parent:
+                        if not graph_util.adjacent(graph, parent, inner_parent):
+                            self.oriented.add((parent, inner_parent))
+                            return 
+            inner_loop(parent)
+            parents_to_undirect.add(parent)
+        
+        add_to_direct_stack = False
+
+        for parent in parents_to_undirect:
+            #TODO: Must orient
+            if not (parent, node) in self.oriented:
+                graph_util.remove_edge(graph, parent, node)
+                graph_util.add_undir_edge(graph, parent, node)
+                self.visited.add(node)
+                self.visited.add(parent)
+                add_to_direct_stack = True
+        
+        if (add_to_direct_stack):
+            for adjacent in graph_util.adjacent_nodes(graph, node):
+                self.direct_stack.append(adjacent)
+            
+            self.direct_stack.append(node)
+
 
     def run_meek_rules(self, node, graph, knowledge):
         self.run_meek_rule_one(node, graph, knowledge)
