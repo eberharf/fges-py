@@ -100,7 +100,7 @@ def get_na_y_x(g, x, y):
             if adjacent(g, z, x):
                 na_y_x.append(z)
 
-    return na_y_x
+    return set(na_y_x)
 
 def is_clique(g, node_set):
     for node in node_set:

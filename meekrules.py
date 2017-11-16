@@ -7,7 +7,7 @@ class MeekRules:
         # Unforced parents should be undirected before orienting
         self.undirect_unforced_edges = undirect_unforced_edges
         self.node_subset = {}
-        self.visited = set({})
+        self.visited = set()
         self.direct_stack = []
         self.oriented = set({})
 
@@ -20,7 +20,8 @@ class MeekRules:
         self.orient_implied_subset(graph, graph.nodes())
 
     def orient_using_meek_rules_locally(self, knowledge, graph):
-        oriented = set({})
+        print("In orient using meek rules locally")
+        oriented = set()
 
         if (self.undirect_unforced_edges):
             for node in self.node_subset:
@@ -29,19 +30,27 @@ class MeekRules:
                 self.direct_stack.extend(
                     graph_util.adjacent_nodes(graph, node))
 
+        print(self.node_subset)
+        print(self.direct_stack)
+
         # TODO: Combine loops
         for node in self.node_subset:
             self.run_meek_rules(node, graph, knowledge)
+        
+        print("past run meek rules loop")
 
+        print(self.direct_stack)
         last_node = self.direct_stack.pop()
+        print(self.direct_stack)
         while last_node is not None:
+            # print(last_node)
             #if self.undirect_unforced_edges:
                 #TODO: undirect_unforced_edges
                 #self.undirect_unforced_edges(last_node, graph)
 
             self.run_meek_rules(last_node, graph, knowledge)
-            
-            if len(self.direct_stack) > 0:
+            # print("past run_meek_rules")
+            if (len(self.direct_stack) > 0):
                 last_node = self.direct_stack.pop()
             else:
                 last_node = None
@@ -56,7 +65,7 @@ class MeekRules:
         """
                 Meek's rule R1: if a-->b, b---c, and a not adj to c, then a-->c
                 """
-        print("Running meek rule one", node)
+        # print("Running meek rule one", node)
         adjacencies = graph_util.adjacent_nodes(graph, node)
         if len(adjacencies) < 2:
             return
@@ -88,7 +97,7 @@ class MeekRules:
         self.direct_stack.append(node_2)
 
     def run_meek_rule_two(self, node_b, graph, knowledge):
-        print("Running meek rule two", node_b)
+        # print("Running meek rule two", node_b)
         adjacencies = graph_util.adjacent_nodes(graph, node_b)
         if len(adjacencies) < 2:
             return
@@ -111,7 +120,7 @@ class MeekRules:
                 self.direct(a, c, graph)
 
     def run_meek_rule_three(self, node, graph, knowledge):
-        print("Running meek rule three", node)
+        # print("Running meek rule three", node)
         adjacencies = graph_util.adjacent_nodes(graph, node)
         if len(adjacencies) < 3:
             return

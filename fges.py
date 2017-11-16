@@ -83,15 +83,18 @@ class FGES:
         self.mode = "covernoncolliders"
         self.fes()
         self.bes()
-
+        
+        print(self.graph.edges())
         return self.graph
 
     def fes(self):
         print("Running FES..")
+        print("Length of sorted arrows", len(self.sorted_arrows))
         while(len(self.sorted_arrows) > 0):
             max_bump_arrow = self.sorted_arrows.pop(0)
             x = max_bump_arrow.a
             y = max_bump_arrow.b
+            print("Popped arrow: ", x, y)
 
             if graph_util.adjacent(self.graph, x, y):
                 continue
@@ -99,14 +102,19 @@ class FGES:
             na_y_x = graph_util.get_na_y_x(self.graph, x, y)
 
             # TODO: max degree checks
+            print(na_y_x)
 
             if max_bump_arrow.na_y_x != na_y_x:
                 continue
+                
+            print("Past crucial step")
+
 
             if not graph_util.get_t_neighbors(self.graph, x, y).issuperset(max_bump_arrow.h_or_t):
                 continue
 
             if not self.valid_insert(x, y, max_bump_arrow.h_or_t, na_y_x):
+                print("Not valid insert")
                 continue
 
             T = max_bump_arrow.h_or_t
@@ -135,6 +143,7 @@ class FGES:
             to_process.add(y)
 
             #TODO: storeGraph()
+            print("Re-evaluating forward")
 
             self.reevaluate_forward(to_process, max_bump_arrow)
     
@@ -283,6 +292,7 @@ class FGES:
         return None
 
     def reapply_orientation(self, x, y, new_arrows):
+        print("reapply orientation")
         # TODO: Not sure what new_arrows does here, since it is passed as null
         # in fes(), but it should (for some reason) be a list of nodes (not arrows!)
         to_process = set([x, y])
@@ -418,6 +428,7 @@ class FGES:
         # TODO Bound Graph
 
         # Adds directed edge
+        print("adding edge ", x, y)
         graph.add_edge(x, y)
 
         # TODO print number of edges
