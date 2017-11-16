@@ -80,7 +80,7 @@ def undir_edge_neighbors(g, x, y):
     return has_undir_edge(g, x, y)
 
 def adjacent_nodes(g, x):
-    return list(nx.all_neighbors(g, x)) #TODO: Check that this is the correct adjacency
+    return list(set(nx.all_neighbors(g, x))) #TODO: Check that this is the correct adjacency
 
 def neighbors(g, x):
     potentialNeighbors = nx.all_neighbors(g, x) #TODO: Check this call
