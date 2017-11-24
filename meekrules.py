@@ -20,30 +20,21 @@ class MeekRules:
         self.orient_implied_subset(graph, graph.nodes())
 
     def orient_using_meek_rules_locally(self, knowledge, graph):
-        print("In orient using meek rules locally")
         oriented = set()
 
         if (self.undirect_unforced_edges):
             for node in self.node_subset:
                 #TODO: undirect_unforced_edges
                 self.undirect_unforced_edges_func(node, graph)
-                print("Adding")
                 self.direct_stack.extend(
                     graph_util.adjacent_nodes(graph, node))
 
-        # print(self.node_subset)
 
         # TODO: Combine loops
         for node in self.node_subset:
             self.run_meek_rules(node, graph, knowledge)
         
-        print("Direct Stack:")
-        print(self.direct_stack)        
-        print("past run meek rules loop")
-
-        print(self.direct_stack)
         last_node = self.direct_stack.pop()
-        print(self.direct_stack)
         while last_node is not None:
             # print(last_node)
             #if self.undirect_unforced_edges:

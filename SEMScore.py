@@ -57,9 +57,7 @@ class SEMBicScore:
         return bic
 
     def local_score_diff_parents(self, node1, node2, parents):
-        print("parents:" + parents)
         return self.local_score(node2, parents + node1) - self.local_score(node2, parents)
 
     def local_score_diff(self, node1, node2):
-        print("Calculating local score diff with x: " + str(node1) + " y: " + str(node2))
         return self.local_score(node2, [node1]) - self.local_score(node2, [])

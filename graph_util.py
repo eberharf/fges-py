@@ -117,7 +117,7 @@ def get_t_neighbors(g, x, y):
         if has_undir_edge(g, z, y):
             if adjacent(g, z, x):
                 continue
-            t.update(z)
+            t.add(z)
 
     return t
 
