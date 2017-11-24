@@ -17,24 +17,28 @@ class SEMBicScore:
         # TODO: Handle singular matrix
         """ `node` is an int index """
         variance = self.cov[node][node]
-        print(variance)
+        p = len(parents)
 
         # np.ix_(rowIndices, colIndices)
     
         covxx = self.cov[np.ix_(parents, parents)]
         covxx_inv = inv(covxx)
-
-        covxy = self.cov[np.ix_(parents, [node])]
+        
+        if (p == 0):
+            covxy = []
+        else:
+            # vector
+            covxy = self.cov[np.ix_(parents, [node])]
 
         b = np.dot(covxx_inv, covxy)
 
         variance -= np.dot(covxy, b)
 
-        print(variance)
         if variance <= 0:
             return None
-
-        return self.score(variance)
+        
+        returnval = self.score(variance, p);
+        return returnval
 
     def local_score_no_parents(self, node):
         """ if node has no parents """
@@ -45,10 +49,10 @@ class SEMBicScore:
 
         return self.score(variance)
 
-    def score(self, variance):
+    def score(self, variance, parents_len):
         bic = - self.sample_size * \
             math.log(variance) - self.penalty * \
-            (self.penalty + 1) * math.log(self.sample_size)
+            (parents_len + 1) * math.log(self.sample_size)
         # TODO: Struct prior?
         return bic
 
@@ -57,4 +61,5 @@ class SEMBicScore:
         return self.local_score(node2, parents + node1) - self.local_score(node2, parents)
 
     def local_score_diff(self, node1, node2):
-        return self.local_score(node2, [node1]) - self.local_score_no_parents(node2)
+        print("Calculating local score diff with x: " + str(node1) + " y: " + str(node2))
+        return self.local_score(node2, [node1]) - self.local_score(node2, [])

@@ -298,7 +298,7 @@ class FGES:
         to_process = set([x, y])
         if new_arrows is not None:
             to_process.update(new_arrows)
-
+        
         return self.meek_orient_restricted(self.graph, to_process, self.knowledge())
 
     def meek_orient_restricted(self, graph, nodes, knowledge):
