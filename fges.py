@@ -39,7 +39,7 @@ class FGES:
         # Meant to be a map from the node to its column in the dataset,
         # but in this implementation, this should always be a map
         # from x -> x, i.e. {1:1, 2:2, ...}
-        self.node_dict = {}
+        #self.node_dict = {}
         self.score = score
         self.sorted_arrows = SortedListWithKey(key=lambda val: -val.bump)
         self.arrow_dict = {}
@@ -232,17 +232,17 @@ class FGES:
                 h = set(_na_y_x)
                 h = h - diff 
 
-                bump = self.delete_eval(a, b, diff, na_y_x, self.node_dict)
+                bump = self.delete_eval(a, b, diff, na_y_x)
 
                 if bump > 0:
                     self.add_arrow(a, b, na_y_x, h, bump)
             
             
-    def delete_eval(self, x, y, diff, na_y_x, node_dict):
+    def delete_eval(self, x, y, diff, na_y_x):
         a = set(diff)
         a.update(graph_util.get_parents(self.graph, y))
         a = a - set(x)
-        return -1 * self.score_graph_change(y, a, x, node_dict)
+        return -1 * self.score_graph_change(y, a, x)
 
     def reevaluate_forward(self, to_process, arrow):
         print("Re-evaluate forward with " + str(to_process) + " " + str(arrow))
@@ -400,20 +400,18 @@ class FGES:
         else:
             self.effect_edges_graph[node_2].append(node_1)
 
-    def insert_eval(self, x, y, T, na_y_x, node_dict):
-        # node_dict is supposed to be a map from node --> index
+    def insert_eval(self, x, y, T, na_y_x):
         assert(x is not y)
         _na_y_x = set(na_y_x)
         _na_y_x.update(T)
         _na_y_x.update(graph_util.get_parents(self.graph, y))
-        return self.score_graph_change(y, _na_y_x, x, node_dict)
+        return self.score_graph_change(y, _na_y_x, x)
     
-    def delete_eval(self, x, y, diff, node_dict):
-        # node_dict is supposed to be a map from node --> index
+    def delete_eval(self, x, y, diff):
         _diff = set(diff)
         _diff.update(graph_util.get_parents(self.graph, y))
         _diff.remove(x)
-        return -1 * self.score_graph_change(y, diff, x, node_dict)
+        return -1 * self.score_graph_change(y, diff, x)
 
     def insert(self, graph, x, y, T):
         """ T is a subset of the neighbors of Y that are not adjacent to
@@ -473,17 +471,16 @@ class FGES:
 
         self.arrow_dict[pair] = None
 
-    def score_graph_change(self, y, parents, x, node_dict):
-        # node_dict is supposed to be a map from node --> index
+    def score_graph_change(self, y, parents, x):
         assert (x is not y)
         assert (y not in parents)
-        y_index = node_dict[y]
+        y_index = y
 
         parent_indices = list()
         for parent_node in parents:
-            parent_indices.append(node_dict[parent_node])
+            parent_indices.append(parent_node)
 
-        return self.score.local_score_diff_parents(node_dict[x], y_index, parent_indices)
+        return self.score.local_score_diff_parents(x, y_index, parent_indices)
 
     def calculate_arrows_forward(self, a, b):
         print("Calculate Arrows Forward: " + str(a) + " " + str(b))
@@ -508,7 +505,7 @@ class FGES:
 
         def outer_loop():
             previous_cliques = set()  # set of sets of nodes
-            previous_cliques.add(set())
+            previous_cliques.add(frozenset())
             new_cliques = set()  # set of sets of nodes
             for i in range(len_T):
 
@@ -516,7 +513,8 @@ class FGES:
                 choices = itertools.combinations(range(0, len_T), i)
 
                 for choice in choices:
-                    T = set([t_neighbors[k] for k in choice])
+                    print("Choice:", choice)
+                    T = frozenset([t_neighbors[k] for k in choice])
                     union = set(na_y_x)
                     union.update(T)
 
@@ -535,9 +533,9 @@ class FGES:
                     if not graph_util.is_clique(self.graph, union):
                         continue
 
-                    new_cliques.add(union)
+                    new_cliques.add(frozenset(union))
 
-                    bump = self.insert_eval(a, b, T, na_y_x, self.node_dict)
+                    bump = self.insert_eval(a, b, T, na_y_x)
 
                     if bump > 0:
                         self.add_arrow(a, b, na_y_x, T, bump)
