@@ -10,6 +10,7 @@ def add_dir_edge(g, x, y):
 
 def undir_to_dir(g, x, y):
     """ Keep only x-> y """
+    print("Directing " + str(x) + " -> " + str(y))
     g.remove_edge(y, x)
     assert(g.has_edge(x, y))
 

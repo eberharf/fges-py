@@ -37,9 +37,9 @@ class MeekRules:
         last_node = self.direct_stack.pop()
         while last_node is not None:
             # print(last_node)
-            #if self.undirect_unforced_edges:
+            if (self.undirect_unforced_edges):
                 #TODO: undirect_unforced_edges
-                #self.undirect_unforced_edges(last_node, graph)
+                self.undirect_unforced_edges_func(last_node, graph)
 
             self.run_meek_rules(last_node, graph, knowledge)
             # print("past run_meek_rules")
@@ -58,9 +58,11 @@ class MeekRules:
                     if inner_parent is not parent:
                         if not graph_util.adjacent(graph, parent, inner_parent):
                             self.oriented.add((parent, inner_parent))
-                            return 
+                            return
+                parents_to_undirect.add(parent)
             inner_loop(parent)
-            parents_to_undirect.add(parent)
+
+
         
         add_to_direct_stack = False
 
@@ -106,20 +108,22 @@ class MeekRules:
             self.r1_helper(node_c, node, node_a, graph, knowledge)
 
     def r1_helper(self, node_a, node_b, node_c, graph, knowledge):
-        if (not graph_util.adjacent(graph, node_a, node_c) and graph_util.has_dir_edge(graph, node_a, node_b) and graph_util.has_undir_edge(graph, node_b, node_c)):
+        if ((not graph_util.adjacent(graph, node_a, node_c)) and graph_util.has_dir_edge(graph, node_a, node_b) and graph_util.has_undir_edge(graph, node_b, node_c)):
             if (not graph_util.is_unshielded_non_collider(graph, node_a, node_b, node_c)):
                 return
 
-        if self.is_arrowpoint_allowed(graph, node_b, node_c, knowledge):
-            self.direct(node_b, node_c, graph)
+            if self.is_arrowpoint_allowed(graph, node_b, node_c, knowledge):
+                self.direct(node_b, node_c, graph)
 
     def direct(self, node_1, node_2, graph):
         graph_util.remove_edge(graph, node_1, node_2)
+        graph_util.remove_edge(graph, node_2, node_1)
         graph_util.add_dir_edge(graph, node_1, node_2)
         self.visited.update([node_1, node_2])
         # node_1 -> node_2 edge
-        self.oriented.add((node_1, node_2))
-        self.direct_stack.append(node_2)
+        if (node_1, node_2) not in self.oriented:
+            self.oriented.add((node_1, node_2))
+            self.direct_stack.append(node_2)
 
     def run_meek_rule_two(self, node_b, graph, knowledge):
         # print("Running meek rule two", node_b)
