@@ -97,7 +97,7 @@ class FGES:
             max_bump_arrow = self.sorted_arrows.pop(0)
             x = max_bump_arrow.a
             y = max_bump_arrow.b
-            print("Popped arrow: " + str(x) + " -> " + str(y))
+            # print("Popped arrow: " + str(x) + " -> " + str(y))
 
             if graph_util.adjacent(self.graph, x, y):
                 continue
@@ -117,7 +117,7 @@ class FGES:
                 continue
 
             if not self.valid_insert(x, y, max_bump_arrow.h_or_t, na_y_x):
-                print("Not valid insert")
+                # print("Not valid insert")
                 continue
 
 
@@ -126,14 +126,14 @@ class FGES:
 
 
             # TODO: Insert should return a bool that we check here
-            inserted = self.insert(self.graph, x, y, T)
+            inserted = self.insert(self.graph, x, y, T, bump)
             if (not inserted):
                 continue
 
             self.total_score += bump
-            print("Edge set before reapplying orientation: " + str(self.graph.edges))
+            # print("Edge set before reapplying orientation: " + str(self.graph.edges))
             visited_nodes = self.reapply_orientation(x, y, None)
-            print("Edge set after reapplying orientation: " + str(self.graph.edges))
+            # print("Edge set after reapplying orientation: " + str(self.graph.edges))
             to_process = set({})
 
             # check whether the (undirected) neighbors of each node in
@@ -410,7 +410,7 @@ class FGES:
         _na_y_x.update(graph_util.get_parents(self.graph, y))
         return self.score_graph_change(y, _na_y_x, x)
 
-    def insert(self, graph, x, y, T):
+    def insert(self, graph, x, y, T, bump):
         """ T is a subset of the neighbors of Y that are not adjacent to
         (connected by a directed or undirected edge) to X, this should
         connect X -> Y and for t \in T, direct T -> Y if it's not already
@@ -419,7 +419,7 @@ class FGES:
         Definition 12
 
         """
-        print("Doing an actual insertion with " + str(x) + " -> " + str(y) + " with T: " + str(T));
+        print("Doing an actual insertion with " + str(x) + " -> " + str(y) + " with T: " + str(T) + " and bump: " + str(bump));
         if graph_util.adjacent(graph, x, y):
             return False
 
@@ -444,7 +444,7 @@ class FGES:
             self.removed_edges.add((x, y))
 
     def add_arrow(self, a, b, na_y_x, h_or_t, bump):
-        print("Added arrow: " + str(a) + " ->  " + str(b) + " with bump " + str(bump) + " and na_y_x " + str(na_y_x) + " and h_or_t " + str(h_or_t))
+        # print("Added arrow: " + str(a) + " ->  " + str(b) + " with bump " + str(bump) + " and na_y_x " + str(na_y_x) + " and h_or_t " + str(h_or_t))
         arrow = Arrow(a, b, na_y_x, h_or_t, bump, self.arrow_index)
         self.sorted_arrows.add(arrow)
 
@@ -458,7 +458,7 @@ class FGES:
 
     def clear_arrow(self, a, b):
         pair = (a, b)
-        print("Clearing arrow " + str(pair))
+        # print("Clearing arrow " + str(pair))
         lookup_arrows = self.arrow_dict.get(pair)
         #print(lookup_arrows)
         if lookup_arrows is not None:
@@ -509,10 +509,10 @@ class FGES:
                 # TODO: Check that this does the same thing as ChoiceGenerator
                 choices = itertools.combinations(range(len_T), i)
                 choices2 = itertools.combinations(range(len_T), i)
-                print("All choices: ", list(choices2), " TNeighbors: ", t_neighbors)
+                # print("All choices: ", list(choices2), " TNeighbors: ", t_neighbors)
                 for choice in choices:
                     T = frozenset([t_neighbors[k] for k in choice])
-                    print("Choice:", T)
+                    # print("Choice:", T)
                     union = set(na_y_x)
                     union.update(T)
 

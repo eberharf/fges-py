@@ -74,7 +74,7 @@ class SEMBicScore:
 
     def score(self, variance, parents_len):
         #print("Variance:", variance)
-        bic = - self.sample_size * math.log(variance) - self.penalty * math.log(self.sample_size)
+        bic = - self.sample_size * math.log(variance) - parents_len * self.penalty * math.log(self.sample_size)
         # TODO: Struct prior?
         #print(bic)
         return bic
@@ -87,5 +87,4 @@ class SEMBicScore:
     def local_score_diff(self, node1, node2):
         #print(self.partial_corr(node1, node2, []))
         #return self.score(self.partial_corr(node1, node2, []), 0)
-        print(self.local_score(node2, [node1]), self.local_score(node2, []))
         return self.local_score(node2, [node1]) - self.local_score(node2, [])

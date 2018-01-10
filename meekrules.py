@@ -164,7 +164,7 @@ class MeekRules:
                     node_b = adjacencies[index_one]
                     node_c = adjacencies[index_two]
 
-                    if graph_util.is_kite(graph, node, a_node, node_b, node_c) and self.is_arrowpoint_allowed(graph, a_node, node):
+                    if graph_util.is_kite(graph, node, a_node, node_b, node_c) and self.is_arrowpoint_allowed(graph, a_node, node, None):
                         if not graph_util.is_unshielded_non_collider(graph, node_c, node_b, a_node):
                             continue
                         self.direct(a_node, node, graph)
