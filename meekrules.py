@@ -48,6 +48,7 @@ class MeekRules:
                 last_node = None
 
     def undirect_unforced_edges_func(self, node, graph):
+        """Removes directed edges that are not forced"""
         parents_to_undirect = set()
         node_parents = graph_util.get_parents(graph, node)
 
