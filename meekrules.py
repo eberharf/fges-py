@@ -20,11 +20,11 @@ class MeekRules:
         self.orient_implied_subset(graph, graph.nodes())
 
     def orient_using_meek_rules_locally(self, knowledge, graph):
+        """Orient graph using the four Meek rules"""
         oriented = set()
 
         if (self.undirect_unforced_edges):
             for node in self.node_subset:
-                #TODO: undirect_unforced_edges
                 self.undirect_unforced_edges_func(node, graph)
                 self.direct_stack.extend(
                     graph_util.adjacent_nodes(graph, node))
@@ -38,7 +38,6 @@ class MeekRules:
         while last_node is not None:
             # print(last_node)
             if (self.undirect_unforced_edges):
-                #TODO: undirect_unforced_edges
                 self.undirect_unforced_edges_func(last_node, graph)
 
             self.run_meek_rules(last_node, graph, knowledge)
@@ -67,7 +66,6 @@ class MeekRules:
         add_to_direct_stack = False
 
         for parent in parents_to_undirect:
-            #TODO: Must orient
             if not (parent, node) in self.oriented:
                 graph_util.remove_edge(graph, parent, node)
                 graph_util.add_undir_edge(graph, parent, node)
@@ -83,6 +81,7 @@ class MeekRules:
 
 
     def run_meek_rules(self, node, graph, knowledge):
+        pass
         self.run_meek_rule_one(node, graph, knowledge)
         self.run_meek_rule_two(node, graph, knowledge)
         self.run_meek_rule_three(node, graph, knowledge)
@@ -98,7 +97,6 @@ class MeekRules:
             return
         all_combinations = itertools.combinations(
             range(0, len(adjacencies)), 2)
-        # TODO: What do a and c represent here?
         for (index_one, index_two) in all_combinations:
             node_a = adjacencies[index_one]
             node_c = adjacencies[index_two]
@@ -132,7 +130,6 @@ class MeekRules:
             return
         all_combinations = itertools.combinations(
             range(0, len(adjacencies)), 2)
-        # TODO: What do a and c represent here?
         for (index_one, index_two) in all_combinations:
             node_a = adjacencies[index_one]
             node_c = adjacencies[index_two]
@@ -168,7 +165,6 @@ class MeekRules:
                         if not graph_util.is_unshielded_non_collider(graph, node_c, node_b, a_node):
                             continue
                         self.direct(a_node, node, graph)
-                        # TODO: Log
 
     def run_meek_rule_four(self, node, graph, knowledge):
         # TODO#Knowledge: This only runs when there is knowledge, so unimplemented for now

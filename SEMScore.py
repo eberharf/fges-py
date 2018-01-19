@@ -7,7 +7,7 @@ from scipy.stats.stats import pearsonr
 class SEMBicScore:
 
     def __init__(self, dataset, sample_size, penalty_discount):
-        """ Initialize the SEMBicScore. Assume that each 
+        """ Initialize the SEMBicScore object. Assume that each
         row is a sample point, and each column is a variable
         """
         self.dataset = dataset
@@ -36,7 +36,6 @@ class SEMBicScore:
         return corr.item(0, 0)
 
     def local_score(self, node, parents):
-        # TODO: Handle singular matrix
         """ `node` is an int index """
         #print("Node:", node, "Parents:", parents)
         variance = self.cov[node][node]
