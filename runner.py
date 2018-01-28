@@ -9,10 +9,10 @@ def load_file(data_file):
 
 def main():
     dataset = load_file(sys.argv[1])
-    score = SEMBicScore(dataset, len(dataset), 2) # Initialize SEMBic Object
+    score = SEMBicScore(dataset, len(dataset), float(sys.argv[2])) # Initialize SEMBic Object
     variables = list(range(len(dataset[0])))
     print("Running FGES on graph with " + str(len(variables)) + " nodes.")
-    fges = FGES(variables, score, 10)
+    fges = FGES(variables, score, 2)
     start_time = time.time()
     fges.search()
     print("--- %s seconds ---" % (time.time() - start_time))

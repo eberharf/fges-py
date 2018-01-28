@@ -13,9 +13,18 @@ def add_dir_edge(g, x, y):
 
 def undir_to_dir(g, x, y):
     """ Keep only x-> y """
-    print("Directing " + str(x) + " -> " + str(y))
-    g.remove_edge(y, x)
-    assert(g.has_edge(x, y))
+    #print("Directing " + str(x) + " -> " + str(y))
+    if g.has_edge(y, x) and g.has_edge(x, y):
+        g.remove_edge(y, x)
+        print("Directing " + str(x) + " -> " + str(y))
+        return True
+    elif g.has_edge(x, y):
+        print("F Directing " + str(x) + " -> " + str(y))
+        return False
+    else:
+        g.add_edge(x, y)
+        print("A Directing " + str(x) + " -> " + str(y))
+        return True
 
 def get_parents(g, x):
     """Returns immediate parents of node x in graph g"""
@@ -27,17 +36,13 @@ def get_parents(g, x):
 
 def has_undir_edge(g, x, y):
     """ Returns whether there is an undirected edge from x to y in Graph g """
-    if g.has_edge(x, y) and g.has_edge(y, x):
-        return True 
-    return False
+    return g.has_edge(x, y) and g.has_edge(y, x)
 
 
 def has_dir_edge(g, x, y):
     """Returns whether there is a directed edge from x to y in Graph g"""
-    if g.has_edge(x, y) and not g.has_edge(y, x):
-        return True
-    else:
-        return False
+    return g.has_edge(x, y) and not g.has_edge(y, x)
+
 
 def is_unshielded_non_collider(g, node_a, node_b, node_c):
     """Returns whether nodes a,b,c form an unshielded collider"""
