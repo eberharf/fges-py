@@ -16,6 +16,7 @@ def main():
     start_time = time.time()
     fges.search()
     print("--- %s seconds ---" % (time.time() - start_time))
+    print(fges.graph.edges)
 
 if __name__ == "__main__":
     main()

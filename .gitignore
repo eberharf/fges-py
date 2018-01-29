@@ -6,3 +6,4 @@ include/
 share/
 lib/
 bin/
+.idea/*
