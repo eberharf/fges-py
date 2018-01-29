@@ -146,17 +146,17 @@ class MeekRules:
     def r2_helper(self, a, b, c, graph, knowledge):
         if graph_util.has_undir_edge(graph, a, b):
             if graph_util.has_dir_edge(graph, a, c) and graph_util.has_dir_edge(graph, c, b) and (a, b) not in self.oriented:
-                print("R21: " + str(a) + " " + str(b))
+                #print("R21: " + str(a) + " " + str(b))
                 self.direct(a, b, graph)
             if graph_util.has_dir_edge(graph, b, c) and graph_util.has_dir_edge(graph, c, a) and (b, a) not in self.oriented:
-                print("R22: " + str(b) + " " + str(a))
+                #print("R22: " + str(b) + " " + str(a))
                 self.direct(b, a, graph)
         if graph_util.has_undir_edge(graph, c, b):
             if graph_util.has_dir_edge(graph, c, a) and graph_util.has_dir_edge(graph, a, b) and (c, b) not in self.oriented:
-                print("R23: " + str(c) + " " + str(b))
+                #print("R23: " + str(c) + " " + str(b))
                 self.direct(c, b, graph)
             if graph_util.has_dir_edge(graph, b, a) and graph_util.has_dir_edge(graph, a, c) and (b, c) not in self.oriented:
-                print("R24: " + str(b) + " " + str(c))
+                #print("R24: " + str(b) + " " + str(c))
                 self.direct(b, c, graph)
 
 
