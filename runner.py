@@ -12,7 +12,7 @@ def main():
     score = SEMBicScore(dataset, len(dataset), float(sys.argv[2])) # Initialize SEMBic Object
     variables = list(range(len(dataset[0])))
     print("Running FGES on graph with " + str(len(variables)) + " nodes.")
-    fges = FGES(variables, score, 2)
+    fges = FGES(variables, score, 10, sys.argv[3]) 
     start_time = time.time()
     fges.search()
     print("--- %s seconds ---" % (time.time() - start_time))

@@ -3,6 +3,7 @@ import itertools
 import graph_util
 from sortedcontainers import SortedListWithKey
 from meekrules import MeekRules
+import numpy as np
 import time
 
 class Arrow:
@@ -14,6 +15,7 @@ class Arrow:
         self.h_or_t = hOrT
         self.bump = bump
         self.index = arrow_index
+
 
 class FGES:
     """
@@ -30,7 +32,7 @@ class FGES:
 
     """
 
-    def __init__(self, variables, score, maxDeg):
+    def __init__(self, variables, score, maxDeg, save_name):
         self.top_graphs = []
 
         # List of the nodes, in order
@@ -42,6 +44,8 @@ class FGES:
         #self.node_dict = {}
         self.score = score
         self.sorted_arrows = SortedListWithKey(key=lambda val: -val.bump)
+        self.save_name = save_name
+        self.desave_name = save_name
         self.arrow_dict = {}
         self.arrow_index = 0
         self.total_score = 0
@@ -80,12 +84,12 @@ class FGES:
 
         # Step 1: Run FES and BES with covernoncolliders
         # mode. The mode is used in reevaluate_forward
-        self.mode = "covernoncolliders"
-        self.fes()
-        self.bes()
-
-
+        #self.mode = "covernoncolliders"
+        #self.fes()
+        #self.bes()
+        to_save = np.array(self.graph.edges)
         #print(self.graph.edges())
+        np.save(self.save_name, to_save)
         return self.graph
 
     def fes(self):
