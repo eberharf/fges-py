@@ -7,3 +7,4 @@ share/
 lib/
 bin/
 .idea/*
+test.npy

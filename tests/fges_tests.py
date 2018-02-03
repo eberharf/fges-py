@@ -12,7 +12,7 @@ def run_fges(data_file):
     score = SEMBicScore(dataset, len(dataset), 2)  # Initialize SEMBic Object
     variables = list(range(len(dataset[0])))
     print("Running FGES on graph with " + str(len(variables)) + " nodes.")
-    fges = FGES(variables, score, 10)
+    fges = FGES(variables, score, 10, "test")
     return fges.search()
 
 def assert_unoriented_edge(edges, e):
@@ -65,16 +65,21 @@ class SimpleTests(unittest.TestCase):
         '''
         graph = run_fges("../data/collider_3.txt")
         edges = graph.edges
+        expected = [(3, 5), (0, 1), (1, 3), (1, 4), (2, 1), (4, 5)]
+        names = ["X2", "X3", "X4", "X1", "X5", "X6"]
+        all_correct = True
 
-        #print(edges)
+        for e in expected:
+            if e not in edges:
+                all_correct = False
+                print("Missing edge", e, "({} -> {})".format(names[e[0]], names[e[1]]))
 
-        # Extra edges: (1, 5), (3, 4), (4, 3), (5, 3), (5, 4)]
-        #  X3 --> X6 (skip shielding)
-        #  X1 --- X5 (extra hidden common cause)
-        #  X6 --- {X1, X5} (fails to orient collider)
+        for e in edges:
+            if e not in expected:
+                all_correct = False
+                print("Extra edge", e, "({} -> {})".format(names[e[0]], names[e[1]]))
 
-        for e in [(3, 5), (0, 1), (1, 3), (1, 4), (2, 1), (4, 5)]:
-            assert_oriented_edge(edges, e)
+        assert all_correct
 
 
 if __name__ == "__main__":
