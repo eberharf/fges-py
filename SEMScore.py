@@ -22,7 +22,7 @@ class SEMBicScore:
         x = self.dataset[:,x]
         y = self.dataset[:,y]
         if Z == []:
-            return pearsonr(x,y)
+            return pearsonr(x,y)[0]
         Z = self.dataset[:,Z]
 
         beta_i = np.linalg.lstsq(Z, x)[0]
@@ -32,8 +32,7 @@ class SEMBicScore:
         res_i = y - Z.dot(beta_j)
 
         corr = np.corrcoef(res_i, res_j)
-
-        return corr.item(0, 0)
+        return corr.item(0, 1)
 
     def local_score(self, node, parents):
         """ `node` is an int index """
@@ -71,19 +70,24 @@ class SEMBicScore:
 
         return self.score(variance)
 
-    def score(self, variance, parents_len):
+    def score(self, variance, parents_len=0):
         #print("Variance:", variance)
+        #print(parents_len)
         bic = - self.sample_size * math.log(variance) - parents_len * self.penalty * math.log(self.sample_size)
         # TODO: Struct prior?
         #print(bic)
+
         return bic
 
     def local_score_diff_parents(self, node1, node2, parents):
         #print(node1, node2, parents)
-        #return self.score(self.partial_corr(node1, node2, parents), len(parents))
-        return self.local_score(node2, parents + [node1]) - self.local_score(node2, parents)
+        r = self.partial_corr(node1, node2, parents)
+        #print(r)
+        return -self.sample_size * math.log(1.0 - r * r) - (len(parents) + 2) * self.penalty * math.log(self.sample_size)
+        #return self.local_score(node2, parents + [node1]) - self.local_score(node2, parents)
 
     def local_score_diff(self, node1, node2):
-        #print(self.partial_corr(node1, node2, []))
-        #return self.score(self.partial_corr(node1, node2, []), 0)
-        return self.local_score(node2, [node1]) - self.local_score(node2, [])
+        r = self.partial_corr(node1, node2, [])
+        #print(r)
+        return -self.sample_size * math.log(1.0 - r * r)
+        #return self.local_score(node2, [node1]) - self.local_score(node2, [])
