@@ -144,14 +144,12 @@ def is_kite(g, a, d, b, c):
 
 def get_common_adjacents(g, x, y):
     """Get the nodes that are adjacent to both x and y"""
-    return adjacent_nodes(g, x) & adjacent_nodes(g, y)
+    return set(adjacent_nodes(g, x)).intersection(set(adjacent_nodes(g, y)))
 
 def remove_edge(g, x, y):
     """Removes the edge from x to y (can be undirected)"""
     if g.has_edge(x, y):
         g.remove_edge(x, y)
-    else:
-        print("Warning: removing an edge that doesn't exist", x, y)
 
 def exists_unblocked_semi_directed_path(g, origin, dest, cond_set, bound):
     """Checks if there exists a unblocked semi directed path (that is, there could be a possible path) from
