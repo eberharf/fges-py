@@ -174,8 +174,8 @@ class FGES:
             x = arrow.a
             y = arrow.b
 
-            if (not arrow.na_y_x is graph_util.get_na_y_x(self.graph, x, y)) or\
-                    (not graph_util.adjacent(self.graph, x, y)) or  (graph_util.has_dir_edge(self.graph, y, x)):
+            if (not (arrow.na_y_x == graph_util.get_na_y_x(self.graph, x, y))) or\
+                    (not graph_util.adjacent(self.graph, x, y)) or (graph_util.has_dir_edge(self.graph, y, x)):
                 continue
 
             diff = set(arrow.na_y_x)
@@ -185,19 +185,19 @@ class FGES:
                 continue
 
             H = arrow.h_or_t
-            bump = arrow
+            bump = arrow.bump
 
             self.delete(self.graph, x, y, H)
 
             meek_rules = MeekRules()
-            meek_rules.orient_implied_subset(self.graph, set(x))
-            meek_rules.orient_implied_subset(self.graph, set(y))
+            meek_rules.orient_implied_subset(self.graph, set([x]))
+            meek_rules.orient_implied_subset(self.graph, set([y]))
             for (node_1, node_2) in meek_rules.oriented:
                 graph_util.undir_to_dir(self.graph, node_1, node_2)
 
             self.total_score += bump
             self.clear_arrow(x, y)
-
+            print("BES: Removed arrow " + str(x) + " -> " + str(y) + " with bump -" + str(bump))
             visited = self.reapply_orientation(x, y, H)
 
             to_process = set()
@@ -207,7 +207,7 @@ class FGES:
                 str_neighbors = self.stored_neighbors[node]
 
                 if str_neighbors != neighbors:
-                    to_process.update(node)
+                    to_process.update([node])
 
             to_process.add(x)
             to_process.add(y)
@@ -233,7 +233,7 @@ class FGES:
         _na_y_x = list(na_y_x)
         _depth  = len(_na_y_x)
 
-        for i in range(_depth):
+        for i in range(_depth + 1):
             choices = itertools.combinations(range(0, _depth), i)
             for choice in choices:
                 diff = set([_na_y_x[k] for k in choice])
@@ -243,6 +243,7 @@ class FGES:
                 bump = self.delete_eval(a, b, diff, na_y_x)
 
                 if bump > 0:
+                    print("Evaluated removal of an arrow " + str(a) + " -> " + str(b) + " with bump: " + str(bump));
                     self.add_arrow(a, b, na_y_x, h, bump)
 
 
@@ -283,8 +284,8 @@ class FGES:
 
     def reevaluate_backward(self, to_process):
         for node in to_process:
-            self.stored_neighbors[node] = graph_util.neighbors(node)
-            adjacent_nodes = graph_util.adjacent_nodes(node)
+            self.stored_neighbors[node] = graph_util.neighbors(self.graph, node)
+            adjacent_nodes = graph_util.adjacent_nodes(self.graph, node)
 
             for adj_node in adjacent_nodes:
                 if (graph_util.has_dir_edge(self.graph, adj_node, node)):
@@ -382,7 +383,7 @@ class FGES:
             for j in range(i + 1, len(self.variables)):
                 self.stored_neighbors[i] = set()
                 bump = self.score.local_score_diff(j, i)
-                #print("Evaluated starting arrow " + str(j) + " -> " + str(i) + " with bump: " + str(bump));
+                print("Evaluated starting arrow " + str(j) + " -> " + str(i) + " with bump: " + str(bump))
                 if bump > 0:
                     self.mark_nonzero_effect(i, j)
                     parent_node = j
@@ -438,7 +439,8 @@ class FGES:
         return True
 
     def delete(self, graph, x, y, H):
-        # self.remove_all_edges(graph, x, y)
+        graph_util.remove_edge(self.graph, x, y)
+        graph_util.remove_edge(self.graph, y, x)
 
         for node in H:
             graph_util.undir_to_dir(graph, y, node)
