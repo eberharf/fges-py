@@ -197,7 +197,7 @@ class FGES:
 
             self.total_score += bump
             self.clear_arrow(x, y)
-            print("BES removed arrow " + str(x) + " -> " + str(y) + "with bump -" + str(bump))
+            print("BES: Removed arrow " + str(x) + " -> " + str(y) + " with bump -" + str(bump))
             visited = self.reapply_orientation(x, y, H)
 
             to_process = set()
