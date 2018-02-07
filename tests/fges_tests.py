@@ -17,7 +17,7 @@ def run_fges(data_file):
 
 def assert_unoriented_edge(edges, e):
     # TODO: should this be an `or` and an `and`?
-    assert (e in edges) or (e[::-1] in edges)
+    assert (e in edges) and (e[::-1] in edges)
 
 def assert_oriented_edge(edges, e):
     assert (e in edges) and not (e[::-1] in edges)

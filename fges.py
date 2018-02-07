@@ -190,6 +190,7 @@ class FGES:
             self.delete(self.graph, x, y, H)
 
             meek_rules = MeekRules()
+            print(x)
             meek_rules.orient_implied_subset(self.graph, set([x]))
             meek_rules.orient_implied_subset(self.graph, set([y]))
             for (node_1, node_2) in meek_rules.oriented:

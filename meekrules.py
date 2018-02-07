@@ -35,8 +35,10 @@ class MeekRules:
         # TODO: Combine loops
         for node in self.node_subset:
             self.run_meek_rules(node, graph, knowledge)
-        
-        last_node = self.direct_stack.pop()
+        if self.direct_stack != []:
+            last_node = self.direct_stack.pop()
+        else:
+            last_node = None
         while last_node is not None:
             # print(last_node)
             if (self.undirect_unforced_edges):
