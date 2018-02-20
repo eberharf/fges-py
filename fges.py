@@ -5,6 +5,13 @@ from sortedcontainers import SortedListWithKey
 from meekrules import MeekRules
 import numpy as np
 import time
+from joblib import Parallel, delayed
+import multiprocessing
+from scipy.stats.stats import pearsonr
+import math
+
+def unwrap_self(arg, **kwarg):
+    return FGES.square_int(*arg, **kwarg)
 
 class Arrow:
 
@@ -32,10 +39,22 @@ class FGES:
 
     """
 
-    def __init__(self, variables, score, maxDeg, save_name):
+    def __init__(self, variables, score, maxDeg, save_name, dataset, sample_size, penalty, cov):
         self.top_graphs = []
-
-        # List of the nodes, in order
+        self.dataset = dataset
+        self.sample_size = sample_size
+        self.penalty = penalty
+        self.cov = cov
+        global dataset2
+        global sample_size2
+        global penalty2
+        global cov2
+        dataset2 = dataset
+        sample_size2 = sample_size
+        penalty2 = penalty
+        cov2 = cov
+        # List of the nodes,
+        # in order
         self.variables = variables
 
         # Meant to be a map from the node to its column in the dataset,
@@ -256,8 +275,10 @@ class FGES:
         return -1 * self.score_graph_change(y, a, x)
 
     def reevaluate_forward(self, to_process, arrow):
+        self.to_calculate = []
         #print("Re-evaluate forward with " + str(to_process) + " " + str(arrow))
         for node in to_process:
+            self.stored_neighbors[node] = graph_util.neighbors(self.graph, node)
             if self.mode == "heuristic":
                 nzero_effect_nodes = self.effect_edges_graph.get(node)
                 #print("Re-evaluate forward. Currently on node: " + str(node))
@@ -281,7 +302,17 @@ class FGES:
                         continue
                     if not graph_util.adjacent(self.graph, node, w):
                         self.clear_arrow(w, node)
-                        self.calculate_arrows_forward(w, node)
+                        self.to_calculate.append((w,node))
+                        #self.calculate_arrows_forward(w, node)
+        # Parallelize
+        num_cores = multiprocessing.cpu_count()
+        global graph
+        graph = self.graph
+        results = Parallel(n_jobs=num_cores)(delayed(calculate_arrows_forward)(a,b) for (a,b) in self.to_calculate)
+        for i in results:
+            for j in i:
+                self.add_arrow(j[0], j[1], j[2], j[3], j[4])
+
 
     def reevaluate_backward(self, to_process):
         for node in to_process:
@@ -487,65 +518,102 @@ class FGES:
 
         return self.score.local_score_diff_parents(x, y_index, parent_indices)
 
-    def calculate_arrows_forward(self, a, b):
-        #print("Calculate Arrows Forward: " + str(a) + " " + str(b))
-        if b not in self.effect_edges_graph[a] and self.mode == "heuristic":
-            print("Returning early...")
-            return
-
-        #print("Get neighbors for " + str(b) + " returns " + str(graph_util.neighbors(self.graph, b)))
-
-        self.stored_neighbors[b] = graph_util.neighbors(self.graph, b)
-
-        na_y_x = graph_util.get_na_y_x(self.graph, a, b)
-        _na_y_x = list(na_y_x)
-
-        if not graph_util.is_clique(self.graph, na_y_x):
-            return
-
-        t_neighbors = list(graph_util.get_t_neighbors(self.graph, a, b))
-        #print("tneighbors for " + str(a) + ", " + str(b) + " returns " + str(t_neighbors))
-        len_T = len(t_neighbors)
+def score_graph_change(self, y, parents, x):
+    """Evaluate change in score from adding x->y"""
+    return score.local_score_diff_parents(x, y, parents)
 
 
-        def outer_loop():
-            previous_cliques = set()  # set of sets of nodes
-            previous_cliques.add(frozenset())
-            new_cliques = set()  # set of sets of nodes
-            for i in range(len_T + 1):
+def insert_eval(x, y, T, na_y_x):
+    """Evaluates bump for adding edge x->y given conditioning sets T and na_y_x"""
+    _na_y_x = set(na_y_x)
+    _na_y_x.update(T)
+    _na_y_x.update(graph_util.get_parents(graph, y))
+    return local_score_diff_parents(x, y, _na_y_x)
 
-                choices = itertools.combinations(range(len_T), i)
-                choices2 = itertools.combinations(range(len_T), i)
-                # print("All choices: ", list(choices2), " TNeighbors: ", t_neighbors)
-                for choice in choices:
-                    T = frozenset([t_neighbors[k] for k in choice])
-                    # print("Choice:", T)
-                    union = set(na_y_x)
-                    union.update(T)
+def local_score_diff_parents(node1, node2, parents):
+    r = partial_corr(node1, node2, parents)
+    # print(r)
+    return -sample_size2 * math.log(1.0 - r * r) - (len(parents) + 2) * penalty2 * math.log(sample_size2)
 
-                    found_a_previous_clique = False
 
-                    for clique in previous_cliques:
-                        # basically if clique is a subset of union
-                        if union >= clique:
-                            found_a_previous_clique = True
-                            break
+def calculate_arrows_forward(a, b):
+    global graph
+    #print("Get neighbors for " + str(b) + " returns " + str(graph_util.neighbors(self.graph, b)))
 
-                    if not found_a_previous_clique:
-                        # Break out of the outer for loop
-                        return
 
-                    if not graph_util.is_clique(self.graph, union):
-                        continue
 
-                    new_cliques.add(frozenset(union))
+    na_y_x = graph_util.get_na_y_x(graph, a, b)
+    na_y_x = list(na_y_x)
 
-                    bump = self.insert_eval(a, b, T, na_y_x)
-                    #print("Evaluated arrow " + str(a) + " -> " + str(b) + " with T: " + str(T) + " and bump: " + str(bump));
+    if not graph_util.is_clique(graph, na_y_x):
+        return
 
-                    if bump > 0:
-                        self.add_arrow(a, b, na_y_x, T, bump)
+    t_neighbors = list(graph_util.get_t_neighbors(graph, a, b))
+    #print("tneighbors for " + str(a) + ", " + str(b) + " returns " + str(t_neighbors))
+    len_T = len(t_neighbors)
 
-                previous_cliques = new_cliques
-                new_cliques = set()
-        outer_loop()
+    lst = []
+    def outer_loop():
+        previous_cliques = set()  # set of sets of nodes
+        previous_cliques.add(frozenset())
+        new_cliques = set()  # set of sets of nodes
+        for i in range(len_T + 1):
+
+            choices = itertools.combinations(range(len_T), i)
+            choices2 = itertools.combinations(range(len_T), i)
+            # print("All choices: ", list(choices2), " TNeighbors: ", t_neighbors)
+            for choice in choices:
+                T = frozenset([t_neighbors[k] for k in choice])
+                # print("Choice:", T)
+                union = set(na_y_x)
+                union.update(T)
+
+                found_a_previous_clique = False
+
+                for clique in previous_cliques:
+                    # basically if clique is a subset of union
+                    if union >= clique:
+                        found_a_previous_clique = True
+                        break
+
+                if not found_a_previous_clique:
+                    # Break out of the outer for loop
+                    return
+
+                if not graph_util.is_clique(graph, union):
+                    continue
+
+                new_cliques.add(frozenset(union))
+
+                bump = insert_eval(a, b, T, na_y_x)
+                #print("Evaluated arrow " + str(a) + " -> " + str(b) + " with T: " + str(T) + " and bump: " + str(bump));
+
+                if bump > 0:
+                    lst.append((a, b, na_y_x, T, bump))
+                    #self.add_arrow(a, b, na_y_x, T, bump)
+
+            previous_cliques = new_cliques
+            new_cliques = set()
+    outer_loop()
+    return lst
+
+def partial_corr(x, y, Z):
+    """
+    Returns the partial correlation coefficients between elements of X controlling for the elements in Z.
+    """
+    global dataset2
+    x = dataset2[:,x]
+    y = dataset2[:,y]
+    Z = list(Z)
+    if Z == []:
+        return pearsonr(x,y)[0]
+    Z = dataset2[:,Z]
+
+    beta_i = np.linalg.lstsq(Z, x)[0]
+    beta_j = np.linalg.lstsq(Z, y)[0]
+
+    res_j = x - Z.dot(beta_i)
+    res_i = y - Z.dot(beta_j)
+
+    corr = np.corrcoef(res_i, res_j)
+    return corr.item(0, 1)
