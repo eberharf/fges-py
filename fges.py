@@ -134,9 +134,6 @@ class FGES:
             # TODO: max degree checks
             # print(na_y_x)
 
-            if max_bump_arrow.na_y_x != na_y_x:
-                continue
-
             # print("Past crucial step")
 
 
