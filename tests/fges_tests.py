@@ -81,6 +81,49 @@ class SimpleTests(unittest.TestCase):
 
         assert all_correct
 
+    def test_collider_4(self):
+        '''
+        Graph Edges:
+          {X1, X2} --> X3 --> X4 --> X5
+
+        FGES should orient all edges
+        '''
+        graph = run_fges("../data/collider_4.txt")
+        edges = graph.edges
+        expected = [(0, 2), (1, 2), (2, 3), (3, 4)]
+
+        for e in expected:
+            assert_oriented_edge(edges, e)
+
+        assert(len(edges) == len(expected))
+
+    def test_collider_5(self):
+        '''
+        Graph Edges:
+          {X1, X2} --> X3; X1 --> X4
+
+        FGES should orient all edges
+        '''
+        graph = run_fges("../data/collider_5.txt")
+        edges = graph.edges
+
+        assert_oriented_edge(edges, (0, 2))
+        assert_oriented_edge(edges, (1, 2))
+        assert_unoriented_edge(edges, (0, 3))
+
+        assert(len(edges) == 4)
+
+    def test_linear_1(self):
+        '''
+        X1 --> X2 --> X3 --> X4
+
+        FGES should not be able to orient any edges
+        '''
+        graph = run_fges("../data/linear_1.txt")
+        edges = graph.edges
+        assert_unoriented_edge(edges, (0, 1))
+        assert_unoriented_edge(edges, (1, 2))
+        assert_unoriented_edge(edges, (2, 3))
 
 if __name__ == "__main__":
     unittest.main()
