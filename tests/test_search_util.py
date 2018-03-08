@@ -2,6 +2,8 @@ from search_util import *
 from graph_util import *
 import networkx as nx
 import unittest
+from fges import *
+from SEMScore import *
 
 class TestDagFromPattern(unittest.TestCase):
 
@@ -70,6 +72,34 @@ class TestDagFromPattern(unittest.TestCase):
         assert is_def_collider(dag, 1, 2, 3)
         assert not is_def_collider(dag, 2, 3, 4)
 
+class TestEstimateParameters(unittest.TestCase):
+
+    def test_params_1(self):
+        '''
+        Graph Edges:
+            1. X1 --> X2 w =  1.0
+            2. X1 --> X3 w =  2.0
+            3. X2 --> X4 w =  0.5
+            4. X3 --> X4 w = -1.0
+        '''
+        dataset = np.loadtxt("../data/params_1.txt", skiprows=1)
+        score = SEMBicScore(dataset, len(dataset), 2)
+        variables = list(range(len(dataset[0])))
+        fges = FGES(variables, score, 10, "test.npy")
+        fges.search()
+
+        dag = dagFromPattern(fges.graph)
+        params, residuals = estimate_parameters(dag, dataset)
+
+        print("True Parameters:\n",
+              np.array([[1, 2, 0, 0],
+                        [0, 0, 0, 0.5],
+                        [0, 0, 0, -1],
+                        [0, 0, 0, 0]]))
+
+        print("Estimated Parameters:\n", params)
+
+        print("Residuals:\n", residuals)
 
 if __name__ == "__main__":
     unittest.main()
