@@ -1,5 +1,6 @@
 import queue
 import networkx as nx
+import itertools
 
 def add_undir_edge(g, x, y):
     """Adds an undirected edge (x,y) to Graph g.
@@ -34,6 +35,20 @@ def get_parents(g, x):
             parents.append(node)
     return parents
 
+def get_ancestors(g, x, accum=None):
+    """Returns all ancestors of a node x in graph g"""
+    if accum is None:
+        accum = set()
+    if x in accum:
+        return accum
+
+    accum.add(x)
+    parents = get_parents(g, x)
+    for p in parents:
+        accum = get_ancestors(g, p, accum)
+
+    return accum
+
 def has_undir_edge(g, x, y):
     """ Returns whether there is an undirected edge from x to y in Graph g """
     return g.has_edge(x, y) and g.has_edge(y, x)
@@ -45,7 +60,7 @@ def has_dir_edge(g, x, y):
 
 
 def is_unshielded_non_collider(g, node_a, node_b, node_c):
-    """Returns whether nodes a,b,c form an unshielded collider"""
+    """Returns whether nodes a,b,c form an unshielded non-coliding triple"""
     if (not adjacent(g, node_a, node_b)):
         return False
     
@@ -61,8 +76,25 @@ def is_unshielded_non_collider(g, node_a, node_b, node_c):
     return not (has_dir_edge(g, node_a, node_b) and has_dir_edge(g, node_c, node_b))
 
 def is_def_collider(g, node_1, node_2, node_3):
-    """Returns whether nodes a,b,c form a collider"""
-    return has_dir_edge(g, node_1, node_2) and has_dir_edge(node_3, node_2)
+    """Returns whether nodes a,b,c form a collider a -> b <- c"""
+    return has_dir_edge(g, node_1, node_2) and has_dir_edge(g, node_3, node_2)
+
+def get_all_collider_triples(g):
+    """Returns set of all collider triples in a Graph g"""
+    colliders = set()
+
+    for n in g.nodes():
+        adj = [m for m in g.nodes() if has_dir_edge(g, m, n)]
+
+        for pair in itertools.combinations(adj, 2):
+            if pair[0] <= pair[1]:
+                p0, p1 = pair[0], pair[1]
+            else:
+                p0, p1 = pair[1], pair[0]
+            if is_def_collider(g, p0, n, p1):
+                colliders.add((p0, n, p1))
+
+    return colliders
 
 def is_ambiguous_triple(g, node_a, node_b, node_c): 
     # TODO: Actually write this. I'm having a tough time finding
