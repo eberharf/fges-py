@@ -226,3 +226,40 @@ def exists_unblocked_semi_directed_path(g, origin, dest, cond_set, bound):
                 if e == None: 
                     e = c 
     return False
+
+def find_directed_path(graph, s, t):
+    '''
+    Find a directed path from s to t in a DiGraph g.
+    If s == t, will search for a non-trivial path.
+    '''
+
+    # Stack for DFS
+    path = []
+
+    def try_node(n):
+        path.append(n)
+        for child in graph.neighbors(n):
+            if has_dir_edge(graph, n, child):
+                if child == t:
+                    path.append(child)
+                    return True
+                elif child in path:
+                    continue
+                else:
+                    if try_node(child):
+                        return True
+        path.remove(n)
+        return False
+
+    if try_node(s):
+        return path
+    else:
+        return None
+
+def detect_cycle(graph):
+    '''Detect a cycle by finding directed loop.'''
+    for n in graph.nodes():
+        if find_directed_path(graph, n, n) is not None:
+            return True
+
+    return False

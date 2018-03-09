@@ -111,5 +111,21 @@ class TestEstimateParameters(unittest.TestCase):
         print("Graph Covariance:\n", get_covariance_matrix(params, residuals))
         print("True Covariance:\n", np.cov(dataset.transpose()))
 
+    def test_cycle(self):
+        '''Test cycle X0 --- X1 --- X2 --- X3 --- X0'''
+        graph = nx.DiGraph()
+        graph.add_nodes_from([0, 1, 2, 3])
+        graph.add_edges_from([(0, 1), (1, 0),
+                              (1, 2), (2, 1),
+                              (2, 3), (3, 2),
+                              (3, 0), (0, 3)])
+        assert dagFromPattern(graph) is None
+
+        graph.remove_edge(0, 1)
+        graph.remove_edge(0, 3)
+        new_dag = dagFromPattern(graph)
+        assert new_dag is not None
+        assert set(new_dag.edges()) == set([(1, 0), (1, 2), (2, 3), (3, 0)])
+
 if __name__ == "__main__":
     unittest.main()

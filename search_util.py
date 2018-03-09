@@ -23,6 +23,9 @@ def dagFromPattern(graph):
     graph_colliders = get_all_collider_triples(graph)
     rules = MeekRules(undirect_unforced_edges=False)
 
+    if detect_cycle(dag):
+        return None
+
     # Tuples of (graph, last edge oriented, orientation status)
     # Orientation status: 0 = unoriented, 1 = forward, 2 = backward
     choices = []
@@ -55,7 +58,7 @@ def dagFromPattern(graph):
         rules.orient_implied(new_g)
 
         new_colliders = get_all_collider_triples(new_g)
-        if new_colliders == graph_colliders:
+        if new_colliders == graph_colliders and find_directed_path(new_g, node1, node1) is None:
             # Commit to orientation for time being
             choices.append((new_g, edge, new_status))
             choices.append((new_g, get_undir_edge(new_g), 0))
