@@ -92,14 +92,18 @@ class TestEstimateParameters(unittest.TestCase):
         params, residuals = estimate_parameters(dag, dataset)
 
         print("True Parameters:\n",
-              np.array([[1, 2, 0, 0],
-                        [0, 0, 0, 0.5],
-                        [0, 0, 0, -1],
-                        [0, 0, 0, 0]]))
+              np.array([[0, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [2, 0, 0, 0],
+                        [0, 0.5, -1, 0]]))
 
         print("Estimated Parameters:\n", params)
 
         print("Residuals:\n", residuals)
+
+        print("Graph Covariance:\n", get_covariance_matrix(params, residuals))
+
+        print("True Covariance:\n", np.cov(dataset.transpose()))
 
 if __name__ == "__main__":
     unittest.main()

@@ -68,21 +68,24 @@ def mean_shift_data(data):
     return data - np.mean(data, axis=0)
 
 def estimate_parameters(dag, data):
+    '''
+    Estimate the parameters of a DAG to fit the data.
+    :return: matrix of edge coefficients, and diagonal matrix of residuals
+    '''
 
     assert get_undir_edge(dag) is None
 
     data = mean_shift_data(data)
-
     num_nodes = len(dag.nodes())
 
     edge_parameters = np.zeros((num_nodes, num_nodes))
-
     residuals = np.zeros((num_nodes, num_nodes))
 
     for j in range(num_nodes):
         inbound_nodes = [i for i in range(num_nodes) if has_dir_edge(dag, i, j)]
 
         if len(inbound_nodes) == 0:
+            residuals[j, j] = np.var(data[:, j])
             continue
 
         assert j not in inbound_nodes
@@ -92,9 +95,22 @@ def estimate_parameters(dag, data):
 
         params, r, _, _ = np.linalg.lstsq(a, b)
 
-        residuals[j, j] = r / data.shape[0]
+        residuals[j, j] = r / (data.shape[0] - 1)
 
         for i in range(len(inbound_nodes)):
-            edge_parameters[inbound_nodes[i], j] = params[i]
+            edge_parameters[j, inbound_nodes[i]] = params[i]
+            # v = edge_parameters * v + e
 
     return edge_parameters, residuals
+
+def get_covariance_matrix(params, resids):
+    '''
+    Get the covariance matrix from edge parameters
+     (representing a DAG) and the residuals.
+
+    For the equation, see "Causal Mapping of Emotion Networks in the Human Brain" (p. 15)
+    '''
+    id = np.identity(params.shape[0])
+    a = np.linalg.inv(id - params)
+
+    return np.matmul(np.matmul(a, resids), np.transpose(a))
