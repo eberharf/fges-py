@@ -91,18 +91,24 @@ class TestEstimateParameters(unittest.TestCase):
         dag = dagFromPattern(fges.graph)
         params, residuals = estimate_parameters(dag, dataset)
 
-        print("True Parameters:\n",
-              np.array([[0, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [2, 0, 0, 0],
-                        [0, 0.5, -1, 0]]))
+        true_params = np.array([[0, 0, 0, 0],
+                                [1, 0, 0, 0],
+                                [2, 0, 0, 0],
+                                [0, 0.5, -1, 0]])
+
+        true_pred = np.matmul(true_params, dataset.transpose()).transpose()
+
+        true_errors = true_pred - dataset
+
+        true_variances = np.var(true_errors, axis=0)
 
         print("Estimated Parameters:\n", params)
+        print("True Parameters:\n", true_params)
 
-        print("Residuals:\n", residuals)
+        print("Graph Error Variances:\n", residuals.diagonal())
+        print("True Error Variances:\n", true_variances)
 
         print("Graph Covariance:\n", get_covariance_matrix(params, residuals))
-
         print("True Covariance:\n", np.cov(dataset.transpose()))
 
 if __name__ == "__main__":
