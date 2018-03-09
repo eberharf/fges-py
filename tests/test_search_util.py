@@ -2,8 +2,7 @@ from search_util import *
 from graph_util import *
 import networkx as nx
 import unittest
-from fges import *
-from SEMScore import *
+from SemEstimator import SemEstimator
 
 class TestDagFromPattern(unittest.TestCase):
 
@@ -83,13 +82,9 @@ class TestEstimateParameters(unittest.TestCase):
             4. X3 --> X4 w = -1.0
         '''
         dataset = np.loadtxt("../data/params_1.txt", skiprows=1)
-        score = SEMBicScore(dataset, len(dataset), 2)
-        variables = list(range(len(dataset[0])))
-        fges = FGES(variables, score, 10, "test.npy")
-        fges.search()
 
-        dag = dagFromPattern(fges.graph)
-        params, residuals = estimate_parameters(dag, dataset)
+        estimator = SemEstimator(dataset)
+        estimator.estimate()
 
         true_params = np.array([[0, 0, 0, 0],
                                 [1, 0, 0, 0],
@@ -97,19 +92,17 @@ class TestEstimateParameters(unittest.TestCase):
                                 [0, 0.5, -1, 0]])
 
         true_pred = np.matmul(true_params, dataset.transpose()).transpose()
-
         true_errors = true_pred - dataset
-
         true_variances = np.var(true_errors, axis=0)
 
-        print("Estimated Parameters:\n", params)
+        print("Estimated Parameters:\n", estimator.params)
         print("True Parameters:\n", true_params)
 
-        print("Graph Error Variances:\n", residuals.diagonal())
+        print("Graph Error Variances:\n", estimator.residuals.diagonal())
         print("True Error Variances:\n", true_variances)
 
-        print("Graph Covariance:\n", get_covariance_matrix(params, residuals))
-        print("True Covariance:\n", np.cov(dataset.transpose()))
+        print("Graph Covariance:\n", estimator.graph_cov)
+        print("True Covariance:\n", estimator.true_cov)
 
     def test_cycle(self):
         '''Test cycle X0 --- X1 --- X2 --- X3 --- X0'''
