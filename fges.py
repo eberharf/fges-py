@@ -32,7 +32,7 @@ class FGES:
 
     """
 
-    def __init__(self, variables, score, maxDeg, save_name):
+    def __init__(self, variables, score, maxDeg, save_name=None):
         self.top_graphs = []
 
         # List of the nodes, in order
@@ -89,7 +89,8 @@ class FGES:
         #self.bes()
         to_save = np.array(self.graph.edges)
         #print(self.graph.edges())
-        np.save(self.save_name, to_save)
+        if self.save_name is not None:
+            np.save(self.save_name, to_save)
         return self.graph
 
     def fes(self):

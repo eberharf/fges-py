@@ -9,10 +9,10 @@ def run_fges(data_file):
     :return: DiGraph from fges.search()
     '''
     dataset = np.loadtxt(data_file, skiprows = 1)
-    score = SEMBicScore(dataset, len(dataset), 2)  # Initialize SEMBic Object
+    score = SEMBicScore(dataset, 2)  # Initialize SEMBic Object
     variables = list(range(len(dataset[0])))
     print("Running FGES on graph with " + str(len(variables)) + " nodes.")
-    fges = FGES(variables, score, 10, "test")
+    fges = FGES(variables, score, 10)
     return fges.search()
 
 def assert_unoriented_edge(edges, e):
