@@ -11,7 +11,7 @@ def load_file(data_file):
 def main():
     dataset = load_file(sys.argv[1])
     #dataset = joblib.load("/home/ubuntu/PycharmProjects/fges-py/data/zebrafish_whole_brain2.npy")[:,:int(sys.argv[1])]
-    score = SEMBicScore(dataset, len(dataset), float(sys.argv[2])) # Initialize SEMBic Object
+    score = SEMBicScore(dataset, float(sys.argv[2])) # Initialize SEMBic Object
     variables = list(range(len(dataset[0])))
     print("Running FGES on graph with " + str(len(variables)) + " nodes.")
     fges = FGES(variables, score, 10, sys.argv[3]) 

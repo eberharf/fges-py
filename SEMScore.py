@@ -6,13 +6,13 @@ from scipy.stats.stats import pearsonr
 
 class SEMBicScore:
 
-    def __init__(self, dataset, sample_size, penalty_discount):
+    def __init__(self, dataset, penalty_discount):
         """ Initialize the SEMBicScore object. Assume that each
         row is a sample point, and each column is a variable
         """
         self.dataset = dataset
         self.cov = np.cov(dataset, rowvar=False)
-        self.sample_size = sample_size
+        self.sample_size = len(dataset)
         self.penalty = penalty_discount
 
     def partial_corr(self, x, y, Z):
