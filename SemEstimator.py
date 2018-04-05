@@ -9,27 +9,38 @@ class SemEstimator:
     def __init__(self, dataset, sparsity=2, savename=None):
         ''' Initialize a SEM Estimator '''
         self.dataset = dataset
-        self._score = SEMBicScore(dataset, sparsity)
-        self._fges = FGES(list(range(dataset.shape[1])), self._score, 10, savename)
+        self.sparsity = sparsity
+        self.savename = savename
 
         self.pattern = None
         self.dag = None
+        self.penalty = None
         self.params = None
         self.residuals = None
         self.graph_cov = None
         self.true_cov = np.cov(dataset.transpose())
 
+    def set_pattern(self, pattern):
+        self.pattern = pattern
+        self.dag = None
+
     def search(self):
         ''' Run an FGES search '''
+        score = SEMBicScore(self.dataset, self.sparsity)
+        self._fges = FGES(list(range(self.dataset.shape[1])), score, 10, self.savename)
         self._fges.search()
-        self.pattern = self._fges.graph
-        self.dag = dagFromPattern(self._fges.graph)
+        self.set_pattern(self._fges.graph)
+
+    def get_dag(self):
+        if self.dag is None:
+            if self.pattern is None:
+                self.search()
+            self.dag, self.penalty = dagFromPatternWithColliders(self.pattern)
+        return self.dag
 
     def estimate(self):
         ''' Estimate edge weights '''
-        if self.dag is None:
-            self.search()
+        self.get_dag()
 
         self.params, self.residuals = estimate_parameters(self.dag, self.dataset)
         self.graph_cov = get_covariance_matrix(self.params, self.residuals)
-
