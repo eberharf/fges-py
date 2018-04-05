@@ -79,22 +79,22 @@ def is_def_collider(g, node_1, node_2, node_3):
     """Returns whether nodes a,b,c form a collider a -> b <- c"""
     return has_dir_edge(g, node_1, node_2) and has_dir_edge(g, node_3, node_2)
 
+def check_for_colliders(g, n):
+    """Searches for an unshielded collider a -> n <- b"""
+    adj = [m for m in g.nodes() if has_dir_edge(g, m, n)]
+    new_colliders = set()
+
+    for pair in itertools.combinations(adj, 2):
+        if is_def_collider(g, pair[0], n, pair[1]):
+            new_colliders.add((pair[0], n, pair[1]))
+
+    return new_colliders
+
+
 def get_all_collider_triples(g):
     """Returns set of all collider triples in a Graph g"""
-    colliders = set()
-
-    for n in g.nodes():
-        adj = [m for m in g.nodes() if has_dir_edge(g, m, n)]
-
-        for pair in itertools.combinations(adj, 2):
-            if pair[0] <= pair[1]:
-                p0, p1 = pair[0], pair[1]
-            else:
-                p0, p1 = pair[1], pair[0]
-            if is_def_collider(g, p0, n, p1):
-                colliders.add((p0, n, p1))
-
-    return colliders
+    colliders = [check_for_colliders(g, n) for n in g.nodes()]
+    return set.union(*colliders)
 
 def is_ambiguous_triple(g, node_a, node_b, node_c): 
     # TODO: Actually write this. I'm having a tough time finding
@@ -227,39 +227,27 @@ def exists_unblocked_semi_directed_path(g, origin, dest, cond_set, bound):
                     e = c 
     return False
 
-def find_directed_path(graph, s, t):
-    '''
-    Find a directed path from s to t in a DiGraph g.
-    If s == t, will search for a non-trivial path.
-    '''
+def detect_cycle_at_node(graph, node):
+    '''Detect a cycle involving a specific node'''
+    q = queue.Queue()
+    visited = set()
+    q.put(node)
 
-    # Stack for DFS
-    path = []
-
-    def try_node(n):
-        path.append(n)
-        for child in graph.neighbors(n):
-            if has_dir_edge(graph, n, child):
-                if child == t:
-                    path.append(child)
+    while not q.empty():
+        t = q.get()
+        for child in graph.neighbors(t):
+            if has_dir_edge(graph, t, child):
+                if child == node:
                     return True
-                elif child in path:
-                    continue
-                else:
-                    if try_node(child):
-                        return True
-        path.remove(n)
-        return False
+                elif child not in visited:
+                    q.put(child)
+        visited.add(t)
 
-    if try_node(s):
-        return path
-    else:
-        return None
+    return False
 
 def detect_cycle(graph):
     '''Detect a cycle by finding directed loop.'''
     for n in graph.nodes():
-        if find_directed_path(graph, n, n) is not None:
+        if detect_cycle_at_node(graph, n):
             return True
-
     return False
