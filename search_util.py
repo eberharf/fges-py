@@ -85,55 +85,55 @@ def dagFromPatternWithColliders(graph):
     :return: DAG
     '''
     pattern = graph.copy()
-    original_colliders = get_all_collider_triples(pattern)
+
+    assert not detect_cycle(pattern), "Pattern must be acyclic to start"
 
     optimal_graph = None
     optimal_penalty = np.inf
 
-    stack = queue.LifoQueue()
-    stack.put((pattern, original_colliders, 0))
+    # Stack of (colliders before messing with the edge,
+    #           penalty before messing with the edge,
+    #           edge to mess with,
+    #           status)
+    history = queue.LifoQueue(maxsize=len(pattern.edges()))
+    history.put((get_all_collider_triples(pattern), 0, get_undir_edge(pattern), 0))
 
-    while not stack.empty():
-        g, colliders, penalty = stack.get()
-        if penalty >= optimal_penalty:
-            # Branch and Bound
+    while not history.empty():
+        c, p, edge, status = history.get()
+
+        if edge is None:
+            if p < optimal_penalty:
+                optimal_penalty = p
+                optimal_graph = pattern.copy()
             continue
 
-        found_undirected = False
-        # Consider all undirected edges
-        for (x, y) in g.edges():
-            if not has_undir_edge(g, x, y) or y < x:
-                continue
+        (x, y) = edge
 
-            found_undirected = True
-
+        if status == 0:
             # Orient x -> y
-            g1 = g.copy()
-            g1.remove_edge(y, x)
+            pattern.remove_edge(y, x)
+            c1 = check_for_colliders(pattern, y)
+            p1 = p + len(c1 - c)  # set difference
+            history.put((c, p, edge, 1))
 
-            if not detect_cycle_at_node(g1, x):
-                c1 = check_for_colliders(g1, y)
-                p1 = penalty + len(c1 - colliders) # set difference
-                e1 = g1.edges()
-                stack.put((g1, colliders.union(c1), p1))
+            if not detect_cycle_at_node(pattern, x) and p1 < optimal_penalty:
+                history.put((c.union(c1), p1, get_undir_edge(pattern), 0))
 
+        elif status == 1:
             # Orient y -> x
-            g2 = g.copy()
-            g2.remove_edge(x, y)
+            pattern.add_edge(y, x)
+            pattern.remove_edge(x, y)
+            c1 = check_for_colliders(pattern, x)
+            p1 = p + len(c1 - c)
+            history.put((c, p, edge, 2))
 
-            if not detect_cycle_at_node(g2, y):
-                c2 = check_for_colliders(g2, x)
-                p2 = penalty + len(c2 - colliders)  # set difference
-                e2 = g2.edges()
-                stack.put((g2, colliders.union(c2), p2))
+            if not detect_cycle_at_node(pattern, y) and p1 < optimal_penalty:
+                history.put((c.union(c1), p1, get_undir_edge(pattern), 0))
 
-        if not found_undirected:
-            # Completely oriented graph
-            if penalty < optimal_penalty:
-                optimal_graph = g
-                optimal_penalty = penalty
-                if penalty == 0:
-                    break
+        elif status == 2:
+            pattern.add_edge(x, y)
+
+    assert optimal_graph is not None
 
     return (optimal_graph, optimal_penalty)
 
