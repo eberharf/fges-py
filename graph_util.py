@@ -79,13 +79,17 @@ def is_def_collider(g, node_1, node_2, node_3):
     """Returns whether nodes a,b,c form a collider a -> b <- c"""
     return has_dir_edge(g, node_1, node_2) and has_dir_edge(g, node_3, node_2)
 
+def is_unshielded_collider(g, node_1, node_2, node_3):
+    """Returns whether nodes a,b,c form an unshielded collider a -> b <- c"""
+    return has_dir_edge(g, node_1, node_2) and has_dir_edge(g, node_3, node_2) and not adjacent(g, node_1, node_3)
+
 def check_for_colliders(g, n):
     """Searches for an unshielded collider a -> n <- b"""
     adj = [m for m in g.nodes() if has_dir_edge(g, m, n)]
     new_colliders = set()
 
     for pair in itertools.combinations(adj, 2):
-        if is_def_collider(g, pair[0], n, pair[1]):
+        if is_unshielded_collider(g, pair[0], n, pair[1]):
             new_colliders.add((pair[0], n, pair[1]))
 
     return new_colliders
