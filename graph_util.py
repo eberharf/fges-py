@@ -23,9 +23,8 @@ def undir_to_dir(g, x, y):
         print("F Directing " + str(x) + " -> " + str(y))
         return False
     else:
-        g.add_edge(x, y)
         print("A Directing " + str(x) + " -> " + str(y))
-        return True
+        return False
 
 def get_parents(g, x):
     """Returns immediate parents of node x in graph g"""
