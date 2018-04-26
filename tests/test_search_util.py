@@ -193,12 +193,14 @@ class TestEstimateParameters(unittest.TestCase):
         estimator = SemEstimator(dataset)
         estimator.estimate()
 
-        true_params = np.array([[0, 0, 0, 0],
-                                [1, 0, 0, 0],
-                                [2, 0, 0, 0],
-                                [0, 0.5, -1, 0]])
+        print(dataset.shape)
 
-        true_pred = np.matmul(true_params, dataset.transpose()).transpose()
+        true_params = np.array([[0, 1, 2, 0],
+                                [0, 0, 0, 0.5],
+                                [0, 0, 0, -1],
+                                [0, 0, 0, 0]])
+
+        true_pred = np.matmul(dataset, true_params)
         true_errors = true_pred - dataset
         true_variances = np.var(true_errors, axis=0)
 

@@ -146,6 +146,7 @@ def estimate_parameters(dag, data):
     '''
     Estimate the parameters of a DAG to fit the data.
     :return: matrix of edge coefficients, and diagonal matrix of residuals
+    For the parameters matrix, p[i, j] is the weight of edge i -> j
     '''
 
     assert get_undir_edge(dag) is None
@@ -173,7 +174,7 @@ def estimate_parameters(dag, data):
         residuals[j, j] = r / (data.shape[0] - 1)
 
         for i in range(len(inbound_nodes)):
-            edge_parameters[j, inbound_nodes[i]] = params[i]
+            edge_parameters[inbound_nodes[i], j] = params[i]
             # v = edge_parameters * v + e
 
     return np.array(edge_parameters), np.array(residuals)
@@ -184,8 +185,9 @@ def get_covariance_matrix(params, resids):
      (representing a DAG) and the residuals.
 
     For the equation, see "Causal Mapping of Emotion Networks in the Human Brain" (p. 15)
+    The params matrix is taken with orientation p[i, j] is the weight for edge i -> j
     '''
     id = np.identity(params.shape[0])
-    a = np.linalg.inv(id - params)
+    a = np.linalg.inv(id - params.transpose())
 
     return np.matmul(np.matmul(a, resids), np.transpose(a))
