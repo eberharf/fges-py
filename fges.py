@@ -60,6 +60,7 @@ class FGES:
         self.stored_neighbors = {}
         self.graph = None
         self.removed_edges = set()
+        self.in_bes = False
 
     def search(self):
         """
@@ -102,6 +103,7 @@ class FGES:
         #print("Running FES.`.")
         #print("Length of sorted arrows", len(self.sorted_arrows))
         # print(self.arrow_dict)
+        self.in_bes = False
         while(len(self.sorted_arrows) > 0):
             max_bump_arrow = self.sorted_arrows.pop(0) # Pops the highest bump edge off the sorted list
             x = max_bump_arrow.a
@@ -135,7 +137,7 @@ class FGES:
 
 
             # TODO: Insert should return a bool that we check here
-            inserted = self.insert(self.graph, x, y, T, bump) # Insert highest bump edge into the graph
+            inserted = self.insert(x, y, T, bump) # Insert highest bump edge into the graph
             if (not inserted):
                 continue
 
@@ -167,6 +169,7 @@ class FGES:
         self.sorted_arrows = SortedListWithKey(key=lambda val: -val.bump)
         self.arrow_dict = {}
         self.stored_neighbors = {}
+        self.in_bes = True
 
         self.initialize_arrows_backwards()
 
@@ -193,10 +196,10 @@ class FGES:
 
             meek_rules = MeekRules()
             print(x)
-            meek_rules.orient_implied_subset(self.graph, set([x]))
-            meek_rules.orient_implied_subset(self.graph, set([y]))
+            meek_rules.orient_implied_subset(self.graph, set([x]), in_bes=True)
+            meek_rules.orient_implied_subset(self.graph, set([y]), in_bes=True)
             for (node_1, node_2) in meek_rules.oriented:
-                graph_util.undir_to_dir(self.graph, node_1, node_2)
+                graph_util.undir_to_dir(self.graph, node_1, node_2, self.in_bes)
 
             self.total_score += bump
             self.clear_arrow(x, y)
@@ -311,14 +314,14 @@ class FGES:
         if new_arrows is not None:
             to_process.update(new_arrows)
 
-        return self.meek_orient_restricted(self.graph, to_process, self.knowledge())
+        return self.meek_orient_restricted(to_process, self.knowledge())
 
-    def meek_orient_restricted(self, graph, nodes, knowledge):
+    def meek_orient_restricted(self, nodes, knowledge):
         # Runs meek rules on the changed adjacencies
         meek_rules = MeekRules(undirect_unforced_edges=True)
-        meek_rules.orient_implied_subset(graph, nodes)
+        meek_rules.orient_implied_subset(self.graph, nodes)
         for (node_1, node_2) in meek_rules.oriented:
-            graph_util.undir_to_dir(self.graph, node_1, node_2)
+            graph_util.undir_to_dir(self.graph, node_1, node_2, self.in_bes)
         return meek_rules.get_visited()
 
     def valid_insert(self, x, y, T, na_y_x):
@@ -419,7 +422,7 @@ class FGES:
         _na_y_x.update(graph_util.get_parents(self.graph, y))
         return self.score_graph_change(y, _na_y_x, x)
 
-    def insert(self, graph, x, y, T, bump):
+    def insert(self, x, y, T, bump):
         """ T is a subset of the neighbors of Y that are not adjacent to
         (connected by a directed or undirected edge) to X, this should
         connect X -> Y and for t \in T, direct T -> Y if it's not already
@@ -429,15 +432,16 @@ class FGES:
 
         """
         print("Doing an actual insertion with " + str(x) + " -> " + str(y) + " with T: " + str(T) + " and bump: " + str(bump))
-        if graph_util.adjacent(graph, x, y):
+
+        if graph_util.adjacent(self.graph, x, y):
             return False
 
 
         # Adds directed edge
-        graph.add_edge(x, y)
+        self.graph.add_edge(x, y)
 
         for node in T:
-            graph_util.undir_to_dir(graph, node, y)
+            graph_util.undir_to_dir(self.graph, node, y, self.in_bes)
 
         return True
 
@@ -446,8 +450,8 @@ class FGES:
         graph_util.remove_edge(self.graph, y, x)
 
         for node in H:
-            graph_util.undir_to_dir(graph, y, node)
-            graph_util.undir_to_dir(graph, x, node)
+            graph_util.undir_to_dir(self.graph, y, node, self.in_bes)
+            graph_util.undir_to_dir(self.graph, x, node, self.in_bes)
             self.removed_edges.add((x, y))
 
     def add_arrow(self, a, b, na_y_x, h_or_t, bump):

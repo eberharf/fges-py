@@ -13,9 +13,10 @@ class MeekRules:
         self.oriented = set({})
         self.oriented2 = set({})
 
-    def orient_implied_subset(self, graph, node_subset):
+    def orient_implied_subset(self, graph, node_subset, in_bes=False):
         self.node_subset = node_subset
         self.visited.update(node_subset)
+        self.in_bes = in_bes
         self.orient_using_meek_rules_locally(None, graph)
 
     def orient_implied(self, graph):
@@ -129,7 +130,7 @@ class MeekRules:
         graph_util.add_dir_edge(graph, node_1, node_2)
         self.visited.update([node_1, node_2])
         # node_1 -> node_2 edge
-        if (node_1, node_2) not in self.oriented:
+        if (node_1, node_2) not in self.oriented and (node_2, node_1) not in self.oriented:
             self.oriented.add((node_1, node_2))
             self.direct_stack.append(node_2)
 
@@ -146,18 +147,18 @@ class MeekRules:
             self.r2_helper(node_a, node_b, node_c, graph, knowledge)
 
     def r2_helper(self, a, b, c, graph, knowledge):
-        if graph_util.has_undir_edge(graph, a, b):
-            if graph_util.has_dir_edge(graph, a, c) and graph_util.has_dir_edge(graph, c, b) and (a, b) not in self.oriented:
+        if graph_util.has_undir_edge(graph, a, b) and (a, b) not in self.oriented and (b, a) not in self.oriented:
+            if graph_util.has_dir_edge(graph, a, c) and graph_util.has_dir_edge(graph, c, b):
                 #print("R21: " + str(a) + " " + str(b))
                 self.direct(a, b, graph)
-            if graph_util.has_dir_edge(graph, b, c) and graph_util.has_dir_edge(graph, c, a) and (b, a) not in self.oriented:
+            if graph_util.has_dir_edge(graph, b, c) and graph_util.has_dir_edge(graph, c, a):
                 #print("R22: " + str(b) + " " + str(a))
                 self.direct(b, a, graph)
-        if graph_util.has_undir_edge(graph, c, b):
-            if graph_util.has_dir_edge(graph, c, a) and graph_util.has_dir_edge(graph, a, b) and (c, b) not in self.oriented:
+        if graph_util.has_undir_edge(graph, c, b) and (b, c) not in self.oriented and (c, b) not in self.oriented:
+            if graph_util.has_dir_edge(graph, c, a) and graph_util.has_dir_edge(graph, a, b):
                 #print("R23: " + str(c) + " " + str(b))
                 self.direct(c, b, graph)
-            if graph_util.has_dir_edge(graph, b, a) and graph_util.has_dir_edge(graph, a, c) and (b, c) not in self.oriented:
+            if graph_util.has_dir_edge(graph, b, a) and graph_util.has_dir_edge(graph, a, c):
                 #print("R24: " + str(b) + " " + str(c))
                 self.direct(b, c, graph)
 
