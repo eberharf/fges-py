@@ -25,8 +25,7 @@ def undir_to_dir(g, x, y, in_bes):
             g.remove_edge(x,y)
         return False
     elif g.has_edge(y, x):
-        print("Error: Wants to reverse direction of alredy directed edge")
-        assert False
+        g.remove_edge(y,x)
     else:
         print("Absent Directing " + str(x) + " -> " + str(y))
         g.add_edge(x, y)
