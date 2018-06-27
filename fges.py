@@ -179,8 +179,7 @@ class FGES:
             y = arrow.b
 
             if (not (arrow.na_y_x == graph_util.get_na_y_x(self.graph, x, y))) or\
-                    (not graph_util.adjacent(self.graph, x, y)) or (graph_util.has_dir_edge(self.graph, y, x) or\
-                         graph_util.has_undir_edge(self.graph, x, y)):
+                    (not graph_util.adjacent(self.graph, x, y)) or (graph_util.has_dir_edge(self.graph, y, x)):
                 continue
 
             diff = set(arrow.na_y_x)
