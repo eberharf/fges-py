@@ -91,8 +91,6 @@ class FGES:
         #self.bes()
         to_save = np.array(self.graph.edges())
         #print(self.graph.edges())
-        if self.save_name is not None:
-            np.save(self.save_name, to_save)
         return {"graph": self.graph, "sparsity": self.sparsity, "filename": self.filename, "nodes": len(self.variables)}
 
     def fes(self):
