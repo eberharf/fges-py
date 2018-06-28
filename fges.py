@@ -89,7 +89,6 @@ class FGES:
         #self.mode = "covernoncolliders"
         #self.fes()
         #self.bes()
-        to_save = np.array(self.graph.edges())
         #print(self.graph.edges())
         return {"graph": self.graph, "sparsity": self.sparsity, "filename": self.filename, "nodes": len(self.variables)}
 
