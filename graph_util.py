@@ -174,8 +174,16 @@ def get_t_neighbors(g, x, y):
     return t
 
 def is_kite(g, a, d, b, c):
-    """Returns if nodes a,b,c, and d form a kite"""
-    return has_undir_edge(g, d, c) and has_undir_edge(g, d, b) and has_dir_edge(g, b, a) and has_dir_edge(g, c, a) and has_undir_edge(g, d, a)
+    """
+    Returns if nodes a,b,c, and d form a kite
+    D --- B, D --- A, D --- C, B --> A <-- C
+    See Meek (1995) Rule 3
+    """
+    return has_undir_edge(g, d, a) and \
+           has_undir_edge(g, d, b) and \
+           has_undir_edge(g, d, c) and \
+           has_dir_edge(g, b, a) and \
+           has_dir_edge(g, c, a)
 
 def get_common_adjacents(g, x, y):
     """Get the nodes that are adjacent to both x and y"""

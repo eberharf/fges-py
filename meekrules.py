@@ -164,26 +164,27 @@ class MeekRules:
 
 
     def run_meek_rule_three(self, node, graph, knowledge):
+        '''
+        A --- B, A --- X, A --- C, B --> X <-- C, B -/- C => A --> X
+        The parameter node = X
+        '''
         # print("Running meek rule three", node)
         adjacencies = graph_util.adjacent_nodes(graph, node)
+
         if len(adjacencies) < 3:
             return
 
-        for a_node in adjacencies:
-            if (graph_util.has_undir_edge(graph, node, a_node)):
-                copy_adjacencies = [a for a in adjacencies if a != a_node]
-                all_combinations = itertools.combinations(
-                    range(0, len(copy_adjacencies)), 2)
+        for node_a in adjacencies:
+            if graph_util.has_undir_edge(graph, node, node_a):
+                copy_adjacencies = [a for a in adjacencies if a != node_a]
+                all_combinations = itertools.combinations(copy_adjacencies, 2)
 
-                for (index_one, index_two) in all_combinations:
-                    node_b = adjacencies[index_one]
-                    node_c = adjacencies[index_two]
-
-                    if graph_util.is_kite(graph, node, a_node, node_b, node_c) and self.is_arrowpoint_allowed(graph, a_node, node, None):
-                        if not graph_util.is_unshielded_non_collider(graph, node_c, node_b, a_node):
-                            continue
-                        #print("R3: " + str(a_node) + " " + str(node))
-                        self.direct(a_node, node, graph)
+                for node_b, node_c in all_combinations:
+                    if graph_util.is_kite(graph, node, node_a, node_b, node_c) and \
+                            self.is_arrowpoint_allowed(graph, node_a, node, None) and \
+                            graph_util.is_unshielded_non_collider(graph, node_c, node_a, node_b):
+                        # print("R3: " + str(node_a) + " " + str(node))
+                        self.direct(node_a, node, graph)
 
     def run_meek_rule_four(self, node, graph, knowledge):
         # TODO#Knowledge: This only runs when there is knowledge, so unimplemented for now
