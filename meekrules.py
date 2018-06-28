@@ -10,8 +10,7 @@ class MeekRules:
         self.node_subset = {}
         self.visited = set()
         self.direct_stack = []
-        self.oriented = set({})
-        self.oriented2 = set({})
+        self.oriented = set()
 
     def orient_implied_subset(self, graph, node_subset, in_bes=False):
         self.node_subset = node_subset
@@ -24,8 +23,6 @@ class MeekRules:
 
     def orient_using_meek_rules_locally(self, knowledge, graph):
         """Orient graph using the four Meek rules"""
-        oriented = set()
-
         if (self.undirect_unforced_edges):
             for node in self.node_subset:
                 self.undirect_unforced_edges_func(node, graph)
@@ -40,6 +37,7 @@ class MeekRules:
             last_node = self.direct_stack.pop()
         else:
             last_node = None
+
         while last_node is not None:
             # print(last_node)
             if (self.undirect_unforced_edges):
@@ -53,39 +51,33 @@ class MeekRules:
                 last_node = None
 
     def undirect_unforced_edges_func(self, node, graph):
-        """Removes directed edges that are not forced"""
-        parents_to_undirect = set()
+        """Removes directed edges that are not forced by an unshielded collider about node"""
         node_parents = graph_util.get_parents(graph, node)
+        parents_to_undirect = set(node_parents)
 
-        for parent in node_parents:
-            def inner_loop(parent):
-                for inner_parent in node_parents:
-                    if inner_parent is not parent:
-                        if not graph_util.adjacent(graph, parent, inner_parent):
-                            #print((parent, inner_parent))
-                            self.oriented2.add((parent, inner_parent))
-                            return
-                parents_to_undirect.add(parent)
-            inner_loop(parent)
+        # Find any unshielded colliders in node_parents, and orient them
+        for (p1, p2) in itertools.combinations(node_parents, 2):
+            if not graph_util.adjacent(graph, p1, p2):
+                # Have an unshielded collider p1 -> node <- p2, which forces orientation
+                self.oriented.update([(p1, node), (p2, node)])
+                parents_to_undirect.difference_update([p1, p2])
 
-
-        
-        add_to_direct_stack = False
+        did_unorient = False
 
         for parent in parents_to_undirect:
-            if not (parent, node) in self.oriented2:
+            if not (parent, node) in self.oriented:
+                # Undirect parent -> node
                 graph_util.remove_edge(graph, parent, node)
                 graph_util.add_undir_edge(graph, parent, node)
                 self.visited.add(node)
                 self.visited.add(parent)
-                add_to_direct_stack = True
-        
-        if (add_to_direct_stack):
+                did_unorient = True
+
+        if did_unorient:
             for adjacent in graph_util.adjacent_nodes(graph, node):
                 self.direct_stack.append(adjacent)
-            
-            self.direct_stack.append(node)
 
+            self.direct_stack.append(node)
 
     def run_meek_rules(self, node, graph, knowledge):
         pass
@@ -165,26 +157,27 @@ class MeekRules:
 
 
     def run_meek_rule_three(self, node, graph, knowledge):
+        '''
+        A --- B, A --- X, A --- C, B --> X <-- C, B -/- C => A --> X
+        The parameter node = X
+        '''
         # print("Running meek rule three", node)
         adjacencies = graph_util.adjacent_nodes(graph, node)
+
         if len(adjacencies) < 3:
             return
 
-        for a_node in adjacencies:
-            if (graph_util.has_undir_edge(graph, node, a_node)):
-                copy_adjacencies = [a for a in adjacencies if a != a_node]
-                all_combinations = itertools.combinations(
-                    range(0, len(copy_adjacencies)), 2)
+        for node_a in adjacencies:
+            if graph_util.has_undir_edge(graph, node, node_a):
+                copy_adjacencies = [a for a in adjacencies if a != node_a]
+                all_combinations = itertools.combinations(copy_adjacencies, 2)
 
-                for (index_one, index_two) in all_combinations:
-                    node_b = adjacencies[index_one]
-                    node_c = adjacencies[index_two]
-
-                    if graph_util.is_kite(graph, node, a_node, node_b, node_c) and self.is_arrowpoint_allowed(graph, a_node, node, None):
-                        if not graph_util.is_unshielded_non_collider(graph, node_c, node_b, a_node):
-                            continue
-                        #print("R3: " + str(a_node) + " " + str(node))
-                        self.direct(a_node, node, graph)
+                for node_b, node_c in all_combinations:
+                    if graph_util.is_kite(graph, node, node_a, node_b, node_c) and \
+                            self.is_arrowpoint_allowed(graph, node_a, node, None) and \
+                            graph_util.is_unshielded_non_collider(graph, node_c, node_a, node_b):
+                        # print("R3: " + str(node_a) + " " + str(node))
+                        self.direct(node_a, node, graph)
 
     def run_meek_rule_four(self, node, graph, knowledge):
         # TODO#Knowledge: This only runs when there is knowledge, so unimplemented for now
