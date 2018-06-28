@@ -10,8 +10,7 @@ class MeekRules:
         self.node_subset = {}
         self.visited = set()
         self.direct_stack = []
-        self.oriented = set({})
-        self.oriented2 = set({})
+        self.oriented = set()
 
     def orient_implied_subset(self, graph, node_subset):
         self.node_subset = node_subset
@@ -23,8 +22,6 @@ class MeekRules:
 
     def orient_using_meek_rules_locally(self, knowledge, graph):
         """Orient graph using the four Meek rules"""
-        oriented = set()
-
         if (self.undirect_unforced_edges):
             for node in self.node_subset:
                 self.undirect_unforced_edges_func(node, graph)
@@ -39,6 +36,7 @@ class MeekRules:
             last_node = self.direct_stack.pop()
         else:
             last_node = None
+
         while last_node is not None:
             # print(last_node)
             if (self.undirect_unforced_edges):
@@ -52,39 +50,33 @@ class MeekRules:
                 last_node = None
 
     def undirect_unforced_edges_func(self, node, graph):
-        """Removes directed edges that are not forced"""
-        parents_to_undirect = set()
+        """Removes directed edges that are not forced by an unshielded collider about node"""
         node_parents = graph_util.get_parents(graph, node)
+        parents_to_undirect = set(node_parents)
 
-        for parent in node_parents:
-            def inner_loop(parent):
-                for inner_parent in node_parents:
-                    if inner_parent is not parent:
-                        if not graph_util.adjacent(graph, parent, inner_parent):
-                            #print((parent, inner_parent))
-                            self.oriented2.add((parent, inner_parent))
-                            return
-                parents_to_undirect.add(parent)
-            inner_loop(parent)
+        # Find any unshielded colliders in node_parents, and orient them
+        for (p1, p2) in itertools.combinations(node_parents, 2):
+            if not graph_util.adjacent(graph, p1, p2):
+                # Have an unshielded collider p1 -> node <- p2, which forces orientation
+                self.oriented.update([(p1, node), (p2, node)])
+                parents_to_undirect.difference_update([p1, p2])
 
-
-        
-        add_to_direct_stack = False
+        did_unorient = False
 
         for parent in parents_to_undirect:
-            if not (parent, node) in self.oriented2:
+            if not (parent, node) in self.oriented:
+                # Undirect parent -> node
                 graph_util.remove_edge(graph, parent, node)
                 graph_util.add_undir_edge(graph, parent, node)
                 self.visited.add(node)
                 self.visited.add(parent)
-                add_to_direct_stack = True
-        
-        if (add_to_direct_stack):
+                did_unorient = True
+
+        if did_unorient:
             for adjacent in graph_util.adjacent_nodes(graph, node):
                 self.direct_stack.append(adjacent)
-            
-            self.direct_stack.append(node)
 
+            self.direct_stack.append(node)
 
     def run_meek_rules(self, node, graph, knowledge):
         pass
