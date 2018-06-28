@@ -4,6 +4,7 @@ from fges import *
 import time
 import sys
 import joblib
+import pickle
 
 def load_file(data_file):
     return np.loadtxt(data_file, skiprows = 1)
@@ -14,11 +15,13 @@ def main():
     score = SEMBicScore(dataset, float(sys.argv[2])) # Initialize SEMBic Object
     variables = list(range(len(dataset[0])))
     print("Running FGES on graph with " + str(len(variables)) + " nodes.")
-    fges = FGES(variables, score, 10, sys.argv[3]) 
+    fges = FGES(variables, score, sys.argv[1], sys.argv[2], sys.argv[3])
     start_time = time.time()
-    fges.search()
+    result = fges.search()
     print("--- %s seconds ---" % (time.time() - start_time))
-    print(fges.graph.edges)
+    with open(sys.argv[3] + '.pkl', 'wb') as f:
+        pickle.dump(result, f, pickle.HIGHEST_PROTOCOL)
+
 
 if __name__ == "__main__":
     main()
