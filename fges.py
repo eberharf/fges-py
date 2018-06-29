@@ -70,7 +70,6 @@ class FGES:
             self.filename = os.path.basename(filename)
         self.in_bes = False
 
-
     def get_dict(self):
         return {"graph": self.graph,
                 "sparsity": self.sparsity,
@@ -79,14 +78,14 @@ class FGES:
 
 
     def search(self, checkpoint=False):
-
         """
         The main entry point into the algorithm.
         """
         # Create an empty directed graph
         if not checkpoint:
             self.graph = nx.DiGraph()
-
+        if not checkpoint:
+            self.graph = nx.DiGraph()
             self.graph.add_nodes_from(self.variables)
             #print("Created Graph with nodes: ", self.graph.nodes())
 

@@ -20,13 +20,15 @@ parser.add_argument("save_frequency", type=int, help="Frequency to checkpoint wo
                                                       Set to 0 to turn off checkpointing.")
 parser.add_argument("save_name", type=str, help="File to save output to.")
 
+
+
 def load_file(data_file):
     return np.loadtxt(data_file, skiprows = 1)
+
 
 def load_checkpoint(filename):
     with open(filename, 'rb') as f:
         return pickle.load(f)
-
 def main():
     args = parser.parse_args()
     if sys.argv[1][-15:] == "-checkpoint.pkl":
