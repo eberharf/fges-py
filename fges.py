@@ -40,6 +40,7 @@ class FGES:
         self.last_checkpoint = time.time()
         # How often fges-py will save a checkpoint of the data
         self.save_frequency = save_frequency
+        self.save_name = save_name
         # List of the nodes, in order
         self.variables = variables
 
@@ -49,8 +50,6 @@ class FGES:
         #self.node_dict = {}
         self.score = score
         self.sorted_arrows = SortedListWithKey(key=lambda val: -val.bump)
-        self.save_name = save_name
-        self.desave_name = save_name
         self.arrow_dict = {}
         self.arrow_index = 0
         self.total_score = 0
@@ -71,12 +70,20 @@ class FGES:
             self.filename = os.path.basename(filename)
         self.in_bes = False
 
+
+    def get_dict(self):
+        return {"graph": self.graph,
+                "sparsity": self.sparsity,
+                "filename": self.filename,
+                "nodes": len(self.variables)}
+
+
     def search(self, checkpoint=False):
+
         """
         The main entry point into the algorithm.
         """
         # Create an empty directed graph
-
         if not checkpoint:
             self.graph = nx.DiGraph()
 
@@ -104,11 +111,12 @@ class FGES:
 
         # Step 1: Run FES and BES with covernoncolliders
         # mode. The mode is used in reevaluate_forward
-        # self.mode = "covernoncolliders"
-        # self.fes()
-        # self.bes()
 
-        return {"graph": self.graph, "sparsity": self.sparsity, "filename": self.filename, "nodes": len(self.variables)}
+        #self.mode = "covernoncolliders"
+        #self.fes()
+        #self.bes()
+        #print(self.graph.edges())
+        return self.get_dict()
 
     def fes(self):
         """The basic workflow of FGES is to first consider add all edges with positive bump, as defined
