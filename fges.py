@@ -32,7 +32,7 @@ class FGES:
 
     """
 
-    def __init__(self, variables, score, maxDeg, save_name=None):
+    def __init__(self, variables, score, filename, sparsity):
         self.top_graphs = []
 
         # List of the nodes, in order
@@ -44,23 +44,28 @@ class FGES:
         #self.node_dict = {}
         self.score = score
         self.sorted_arrows = SortedListWithKey(key=lambda val: -val.bump)
-        self.save_name = save_name
-        self.desave_name = save_name
         self.arrow_dict = {}
         self.arrow_index = 0
         self.total_score = 0
+        self.sparsity = float(sparsity)
         # Only needed for their `heuristic speedup`, it tells
         # you if two edges even have an effect on each other
         # the way we use this is effect_edges_graph[node] gives you
         # an iterable of nodes {w_1, w_2, w_3...} where node and
         # w_i have a non-zero total effect
         self.effect_edges_graph = {}
-        self.max_degree = maxDeg
         self.cycle_bound = -1
         self.stored_neighbors = {}
         self.graph = None
         self.removed_edges = set()
+        self.filename = filename
         self.in_bes = False
+
+    def get_dict(self):
+        return {"graph": self.graph,
+                "sparsity": self.sparsity,
+                "filename": self.filename,
+                "nodes": len(self.variables)}
 
     def search(self):
         """
@@ -88,11 +93,8 @@ class FGES:
         #self.mode = "covernoncolliders"
         #self.fes()
         #self.bes()
-        to_save = np.array(self.graph.edges())
         #print(self.graph.edges())
-        if self.save_name is not None:
-            np.save(self.save_name, to_save)
-        return self.graph
+        return self.get_dict()
 
     def fes(self):
         """The basic workflow of FGES is to first consider add all edges with positive bump, as defined
