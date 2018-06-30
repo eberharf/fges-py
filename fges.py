@@ -5,7 +5,7 @@ from sortedcontainers import SortedListWithKey
 from meekrules import MeekRules
 import numpy as np
 import time
-import pickle
+import dill
 import os
 
 class Arrow:
@@ -34,12 +34,12 @@ class FGES:
 
     """
 
-    def __init__(self, variables, score, filename, sparsity, save_frequency=0,
+    def __init__(self, variables, score, sparsity, filename='', checkpoint_frequency=0,
                  save_name=None):
         self.top_graphs = []
         self.last_checkpoint = time.time()
         # How often fges-py will save a checkpoint of the data
-        self.save_frequency = save_frequency
+        self.checkpoint_frequency = checkpoint_frequency
         self.save_name = save_name
         # List of the nodes, in order
         self.variables = variables
@@ -64,10 +64,7 @@ class FGES:
         self.stored_neighbors = {}
         self.graph = None
         self.removed_edges = set()
-        if filename[-4] == '.':
-            self.filename = os.path.basename(filename)[:-4]
-        else:
-            self.filename = os.path.basename(filename)
+        self.filename = filename
         self.in_bes = False
 
     def get_dict(self):
@@ -76,21 +73,23 @@ class FGES:
                 "filename": self.filename,
                 "nodes": len(self.variables)}
 
+    @classmethod
+    def load_checkpoint(cls, filename):
+        with open(filename, 'rb') as f:
+            return dill.load(f)
 
     def search(self, checkpoint=False):
         """
         The main entry point into the algorithm.
         """
         # Create an empty directed graph
-        if not checkpoint:
-            self.graph = nx.DiGraph()
-        if not checkpoint:
+        if self.graph is None:
             self.graph = nx.DiGraph()
             self.graph.add_nodes_from(self.variables)
             #print("Created Graph with nodes: ", self.graph.nodes())
 
-        # for now, there is no knowledge and faithfulness is assumed
-        # TODO: self.addRequiredEdges()
+            # for now, there is no knowledge and faithfulness is assumed
+            # TODO: self.addRequiredEdges()
 
             self.initialize_forward_edges_from_empty_graph() # Adds all edges that have positive bump
 
@@ -99,13 +98,15 @@ class FGES:
         self.mode = "heuristic"
         if not self.in_bes:
             self.fes()
-            checkpoint = False
-        self.in_bes = True
-        if not checkpoint:
             self.sorted_arrows = SortedListWithKey(key=lambda val: -val.bump)
             self.arrow_dict = {}
             self.stored_neighbors = {}
             self.initialize_arrows_backwards()
+            self.in_bes = True
+
+            if self.checkpoint_frequency > 0:
+                self.create_checkpoint()
+
         self.bes()
 
         # Step 1: Run FES and BES with covernoncolliders
@@ -127,7 +128,7 @@ class FGES:
         #print("Length of sorted arrows", len(self.sorted_arrows))
         # print(self.arrow_dict)
         while len(self.sorted_arrows) > 0:
-            if self.save_frequency != 0 and (time.time() - self.last_checkpoint) > self.save_frequency:
+            if self.checkpoint_frequency > 0 and (time.time() - self.last_checkpoint) > self.checkpoint_frequency:
                 self.create_checkpoint()
                 self.last_checkpoint = time.time()
             max_bump_arrow = self.sorted_arrows.pop(0) # Pops the highest bump edge off the sorted list
@@ -191,7 +192,7 @@ class FGES:
         of the additions to the graph after those edges were added."""
 
         while len(self.sorted_arrows) > 0:
-            if self.save_frequency != 0 and (time.time() - self.last_checkpoint) > self.save_frequency:
+            if self.checkpoint_frequency > 0 and (time.time() - self.last_checkpoint) > self.checkpoint_frequency:
                 self.create_checkpoint()
                 self.last_checkpoint = time.time()
             arrow = self.sorted_arrows.pop(0)
@@ -577,4 +578,4 @@ class FGES:
 
     def create_checkpoint(self):
         with open(self.save_name + '-checkpoint.pkl', 'wb') as f:
-            pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
+            dill.dump(self, f, dill.HIGHEST_PROTOCOL)
