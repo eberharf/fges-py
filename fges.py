@@ -454,7 +454,7 @@ class FGES:
         self.graph.add_edge(x, y)
 
         for node in T:
-            graph_util.undir_to_dir(self.graph, node, y, self.in_bes)
+            graph_util.undir_to_dir(self.graph, node, y)
 
         return True
 

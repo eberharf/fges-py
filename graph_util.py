@@ -31,24 +31,20 @@ def add_dir_edge(g, x, y):
     """Adds an directed edge (x,y) to Graph g."""
     g.add_edge(x, y)
 
-def undir_to_dir(g, x, y, in_bes):
-    """ Keep only x-> y """
-    #print("Directing " + str(x) + " -> " + str(y))
+def undir_to_dir(g, x, y):
+    """ Keep only x --> y """
     if g.has_edge(y, x) and g.has_edge(x, y):
+        # Current edge is x --- y
         g.remove_edge(y, x)
         print("Directing " + str(x) + " -> " + str(y))
-        return True
     elif g.has_edge(x, y):
-        print("Fake Directing " + str(x) + " -> " + str(y))
-        if in_bes:
-            g.remove_edge(x,y)
-        return False
+        # Current edge is x --> y
+        print("No-op Directing " + str(x) + " -> " + str(y))
     elif g.has_edge(y, x):
-        g.remove_edge(y,x)
+        # Current edge is y --> x
+        raise AssertionError("undir_to_dir: trying to reverse a directed edge")
     else:
-        print("Absent Directing " + str(x) + " -> " + str(y))
-        g.add_edge(x, y)
-        return True
+        raise AssertionError("undir_to_dir: no such edge")
 
 def get_parents(g, x):
     """Returns immediate parents of node x in graph g"""
