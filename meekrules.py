@@ -12,10 +12,9 @@ class MeekRules:
         self.direct_stack = []
         self.oriented = set()
 
-    def orient_implied_subset(self, graph, node_subset, in_bes=False):
+    def orient_implied_subset(self, graph, node_subset):
         self.node_subset = node_subset
         self.visited.update(node_subset)
-        self.in_bes = in_bes
         self.orient_using_meek_rules_locally(None, graph)
 
     def orient_implied(self, graph):

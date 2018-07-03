@@ -203,9 +203,6 @@ class FGES:
                     (not graph_util.adjacent(self.graph, x, y)) or (graph_util.has_dir_edge(self.graph, y, x)):
                 continue
 
-            diff = set(arrow.na_y_x)
-            diff = diff - arrow.h_or_t
-
             if (not self.valid_delete(x, y, arrow.h_or_t, arrow.na_y_x)):
                 continue
 
@@ -215,11 +212,8 @@ class FGES:
             self.delete(self.graph, x, y, H)
 
             meek_rules = MeekRules()
-            print(x)
-            meek_rules.orient_implied_subset(self.graph, set([x]), in_bes = self.in_bes)
-            meek_rules.orient_implied_subset(self.graph, set([y]), in_bes = self.in_bes)
-            for (node_1, node_2) in meek_rules.oriented:
-                graph_util.undir_to_dir(self.graph, node_1, node_2, self.in_bes)
+            meek_rules.orient_implied_subset(self.graph, set([x]))
+            meek_rules.orient_implied_subset(self.graph, set([y]))
 
             self.total_score += bump
             self.clear_arrow(x, y)
@@ -340,8 +334,6 @@ class FGES:
         # Runs meek rules on the changed adjacencies
         meek_rules = MeekRules(undirect_unforced_edges=True)
         meek_rules.orient_implied_subset(self.graph, nodes)
-        for (node_1, node_2) in meek_rules.oriented:
-            graph_util.undir_to_dir(self.graph, node_1, node_2, self.in_bes)
         return meek_rules.get_visited()
 
     def valid_insert(self, x, y, T, na_y_x):
