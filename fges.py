@@ -210,7 +210,7 @@ class FGES:
             H = arrow.h_or_t
             bump = arrow.bump
 
-            self.delete(self.graph, x, y, H)
+            self.delete(x, y, H)
 
             meek_rules = MeekRules()
             meek_rules.orient_implied_subset(self.graph, set([x]))
@@ -458,14 +458,25 @@ class FGES:
 
         return True
 
-    def delete(self, graph, x, y, H):
+    def delete(self, x, y, H):
+        # Remove any edge between x and y
         graph_util.remove_dir_edge(self.graph, x, y)
         graph_util.remove_dir_edge(self.graph, y, x)
 
+        # H is the set of neighbors of y that are adjacent to x
         for node in H:
-            graph_util.undir_to_dir(self.graph, y, node, self.in_bes)
-            graph_util.undir_to_dir(self.graph, x, node, self.in_bes)
-            self.removed_edges.add((x, y))
+            if (graph_util.has_dir_edge(self.graph, node, y)
+                    or graph_util.has_dir_edge(self.graph, node, x)):
+                continue
+
+            # Direct the edge y --- node as y --> node
+            graph_util.undir_to_dir(self.graph, y, node)
+
+            # If x --- node is undirected, direct it as x --> node
+            if graph_util.has_undir_edge(self.graph, x, node):
+                graph_util.undir_to_dir(self.graph, x, node)
+
+        self.removed_edges.add((x, y))
 
     def add_arrow(self, a, b, na_y_x, h_or_t, bump):
         """Add arrow a->b with bump "bump" and conditioning sets na_y_x and h_or_t to sorted arrows list"""
