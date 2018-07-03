@@ -66,7 +66,7 @@ class MeekRules:
         for parent in parents_to_undirect:
             if not (parent, node) in self.oriented:
                 # Undirect parent -> node
-                graph_util.remove_edge(graph, parent, node)
+                graph_util.remove_dir_edge(graph, parent, node)
                 graph_util.add_undir_edge(graph, parent, node)
                 self.visited.add(node)
                 self.visited.add(parent)
@@ -116,8 +116,8 @@ class MeekRules:
 
     def direct(self, node_1, node_2, graph):
         #print("Int Directing " + str(node_1) + " " + str(node_2))
-        graph_util.remove_edge(graph, node_1, node_2)
-        graph_util.remove_edge(graph, node_2, node_1)
+        graph_util.remove_dir_edge(graph, node_1, node_2)
+        graph_util.remove_dir_edge(graph, node_2, node_1)
         graph_util.add_dir_edge(graph, node_1, node_2)
         self.visited.update([node_1, node_2])
         # node_1 -> node_2 edge

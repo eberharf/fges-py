@@ -1,3 +1,22 @@
+"""
+Graph Terminology
+-----------------
+ * DAG: Directed Acyclic Graph
+ * PDAG: Partially Directed Acyclic Graph
+ * Directed edge: x --> y
+ * Undirected edge: x --- y is represented as the pair x --> y and y --> x
+ * Parents(x): nodes y such that there is a directed edge y --> x
+ * Neighbors(x): nodes y such that there is an undirected edge y --- x
+ * Adjacents(x): nodes y such there is some edge between x and y
+   (i.e. x --- y, x --> y, or x <-- y)
+ * Directed path: A path of entirely directed edges in the same direction
+ * Ancestors(x): nodes y such that there is a directed path y ~~> x
+ * Unshielded collider: triple of vertices x, y, z with directed edges
+   x --> y <-- z, and x and z are not adjacent
+ * Semi-directed path: A path of directed and undirected edges, where no
+   directed edge is going in the opposite direction
+"""
+
 import queue
 import networkx as nx
 import itertools
@@ -98,7 +117,6 @@ def check_for_colliders(g, n):
 
     return new_colliders
 
-
 def get_all_collider_triples(g):
     """Returns set of all collider triples in a Graph g"""
     colliders = [check_for_colliders(g, n) for n in g.nodes()]
@@ -116,11 +134,6 @@ def traverseSemiDirected(g, x, y):
     if has_undir_edge(g, x, y) or g.has_edge(x, y):
         return y
     return None
-
-def remove_all_edges(g, x, y):
-    """Removes any and all edges between nodes x and y"""
-    g.remove_edge(x, y)
-    g.remove_edge(y, x)
 
 def adjacent(g, x, y):
     """ Returns whether nodes x and y are adjacent """
@@ -194,8 +207,8 @@ def get_common_adjacents(g, x, y):
     """Get the nodes that are adjacent to both x and y"""
     return set(adjacent_nodes(g, x)).intersection(set(adjacent_nodes(g, y)))
 
-def remove_edge(g, x, y):
-    """Removes the edge from x to y (can be undirected)"""
+def remove_dir_edge(g, x, y):
+    """Removes the directed edge x --> y"""
     if g.has_edge(x, y):
         g.remove_edge(x, y)
 

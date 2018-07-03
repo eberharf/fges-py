@@ -195,6 +195,7 @@ class FGES:
             if self.checkpoint_frequency > 0 and (time.time() - self.last_checkpoint) > self.checkpoint_frequency:
                 self.create_checkpoint()
                 self.last_checkpoint = time.time()
+
             arrow = self.sorted_arrows.pop(0)
             x = arrow.a
             y = arrow.b
@@ -458,8 +459,8 @@ class FGES:
         return True
 
     def delete(self, graph, x, y, H):
-        graph_util.remove_edge(self.graph, x, y)
-        graph_util.remove_edge(self.graph, y, x)
+        graph_util.remove_dir_edge(self.graph, x, y)
+        graph_util.remove_dir_edge(self.graph, y, x)
 
         for node in H:
             graph_util.undir_to_dir(self.graph, y, node, self.in_bes)
