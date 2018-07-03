@@ -2,7 +2,7 @@ from SEMScore import *
 from fges import *
 import unittest
 
-def run_fges(data_file):
+def run_fges(data_file, **kwargs):
     '''
     Run FGES on a data file, returning the resulting graph
     :param data_file: the data file to use
@@ -12,7 +12,7 @@ def run_fges(data_file):
     score = SEMBicScore(dataset, 2)  # Initialize SEMBic Object
     variables = list(range(len(dataset[0])))
     print("Running FGES on graph with " + str(len(variables)) + " nodes.")
-    fges = FGES(variables, score, 10)
+    fges = FGES(variables, score, 10, **kwargs)
     return fges.search()
 
 def assert_unoriented_edge(edges, e):
@@ -29,8 +29,8 @@ class SimpleTests(unittest.TestCase):
         Test a simple collider X1 -> X3 <- X2
         FGES should obtain the exact graph
         '''
-        graph = run_fges("../data/collider_1.txt")
-        edges = graph.edges
+        result = run_fges("../data/collider_1.txt")
+        edges = result['graph'].edges()
 
         assert_oriented_edge(edges, (0, 2))
         assert_oriented_edge(edges, (1, 2))
@@ -42,8 +42,8 @@ class SimpleTests(unittest.TestCase):
          X1 -> X4 -> X3
         FGES should resolve collider at X3, and connection between other nodes
         '''
-        graph = run_fges("../data/collider_2.txt")
-        edges = graph.edges
+        result = run_fges("../data/collider_2.txt")
+        edges = result['graph'].edges()
 
         assert_oriented_edge(edges, (1, 2))
         assert_oriented_edge(edges, (3, 2))
@@ -52,32 +52,28 @@ class SimpleTests(unittest.TestCase):
 
     def test_collider_3(self):
         '''
-        Graph Nodes: X2,X3,X4,X1,X5,X6
         Graph Edges:
-          {X2, X4} --> X3 --> {X1, X5} --> X6
-            1. X1 --> X6
-            2. X2 --> X3
-            3. X3 --> X1
-            4. X3 --> X5
-            5. X4 --> X3
-            6. X5 --> X6
+          {X0, X1} --> X2 --> {X3, X4} --> X5
+
         FGES should orient all edges
         '''
-        graph = run_fges("../data/collider_3.txt")
-        edges = graph.edges
-        expected = [(3, 5), (0, 1), (1, 3), (1, 4), (2, 1), (4, 5)]
-        names = ["X2", "X3", "X4", "X1", "X5", "X6"]
+        result = run_fges("../data/collider_3.txt")
+        edges = result['graph'].edges()
+
+        print("Computed Edges:", edges)
+
+        expected = [(0, 2), (1, 2), (2, 3), (2, 4), (3, 5), (4, 5)]
         all_correct = True
 
         for e in expected:
             if e not in edges:
                 all_correct = False
-                print("Missing edge", e, "({} -> {})".format(names[e[0]], names[e[1]]))
+                print("Missing edge", e, "({} -> {})".format(*e))
 
         for e in edges:
             if e not in expected:
                 all_correct = False
-                print("Extra edge", e, "({} -> {})".format(names[e[0]], names[e[1]]))
+                print("Extra edge", e, "({} -> {})".format(*e))
 
         assert all_correct
 
@@ -88,8 +84,9 @@ class SimpleTests(unittest.TestCase):
 
         FGES should orient all edges
         '''
-        graph = run_fges("../data/collider_4.txt")
-        edges = graph.edges
+        result = run_fges("../data/collider_4.txt")
+        edges = result['graph'].edges()
+
         expected = [(0, 2), (1, 2), (2, 3), (3, 4)]
 
         for e in expected:
@@ -104,8 +101,8 @@ class SimpleTests(unittest.TestCase):
 
         FGES should orient all edges
         '''
-        graph = run_fges("../data/collider_5.txt")
-        edges = graph.edges
+        result = run_fges("../data/collider_5.txt")
+        edges = result['graph'].edges()
 
         assert_oriented_edge(edges, (0, 2))
         assert_oriented_edge(edges, (1, 2))
@@ -119,11 +116,24 @@ class SimpleTests(unittest.TestCase):
 
         FGES should not be able to orient any edges
         '''
-        graph = run_fges("../data/linear_1.txt")
-        edges = graph.edges
+        result = run_fges("../data/linear_1.txt")
+        edges = result['graph'].edges()
+
         assert_unoriented_edge(edges, (0, 1))
         assert_unoriented_edge(edges, (1, 2))
         assert_unoriented_edge(edges, (2, 3))
+
+class TestCheckpoints(unittest.TestCase):
+
+    def checkpoint_verify(self, data_file):
+        result = run_fges(data_file, checkpoint_frequency=1, save_name='test_tmp')
+        result2 = FGES.load_checkpoint('test_tmp-checkpoint.pkl').search()
+        os.remove("test_tmp-checkpoint.pkl")
+        assert set(result['graph'].edges()) == set(result2['graph'].edges())
+
+    def test_checkpoints(self):
+        for i in range(1, 6):
+            self.checkpoint_verify("../data/collider_{}.txt".format(i))
 
 if __name__ == "__main__":
     unittest.main()

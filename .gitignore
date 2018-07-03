@@ -8,4 +8,7 @@ lib/
 bin/
 .idea/*
 test.npy
+*.pkl
 *.pyc
+*.npy
+*.ipynb
