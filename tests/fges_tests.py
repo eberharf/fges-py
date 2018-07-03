@@ -16,7 +16,6 @@ def run_fges(data_file, **kwargs):
     return fges.search()
 
 def assert_unoriented_edge(edges, e):
-    # TODO: should this be an `or` and an `and`?
     assert (e in edges) and (e[::-1] in edges)
 
 def assert_oriented_edge(edges, e):
@@ -122,6 +121,46 @@ class SimpleTests(unittest.TestCase):
         assert_unoriented_edge(edges, (0, 1))
         assert_unoriented_edge(edges, (1, 2))
         assert_unoriented_edge(edges, (2, 3))
+
+    def test_single_edge_1(self):
+        '''
+        Graph with 10 variables and a single edge.
+        '''
+        result = run_fges("../data/single_edge_1.txt")
+        edges = result['graph'].edges()
+
+        assert len(edges) == 2
+        assert_unoriented_edge(edges, (0, 1))
+
+    def test_single_edge_2(self):
+        '''
+        Graph with 50 variables and a single edge.
+        '''
+        result = run_fges("../data/single_edge_2.txt")
+        edges = result['graph'].edges()
+
+        assert len(edges) == 2
+        assert_unoriented_edge(edges, (0, 1))
+
+    def test_single_edge_3(self):
+        '''
+        Graph with 100 variables and a single edge.
+        '''
+        result = run_fges("../data/single_edge_3.txt")
+        edges = result['graph'].edges()
+
+        print(edges)
+        assert len(edges) == 2
+        assert_unoriented_edge(edges, (36, 58))
+
+    def test_fifty_edges(self):
+        result = run_fges("../data/50_edges.txt")
+        edges = result['graph'].edges()
+
+        dirs = [e for e in edges if e[::-1] not in edges]
+        undirs = [e for e in edges if e[0] < e[1] and e[::-1] in edges]
+        assert len(dirs) + len(undirs) == 50
+
 
 class TestCheckpoints(unittest.TestCase):
 
