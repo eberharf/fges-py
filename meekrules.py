@@ -12,10 +12,9 @@ class MeekRules:
         self.direct_stack = []
         self.oriented = set()
 
-    def orient_implied_subset(self, graph, node_subset, in_bes=False):
+    def orient_implied_subset(self, graph, node_subset):
         self.node_subset = node_subset
         self.visited.update(node_subset)
-        self.in_bes = in_bes
         self.orient_using_meek_rules_locally(None, graph)
 
     def orient_implied(self, graph):
@@ -67,7 +66,7 @@ class MeekRules:
         for parent in parents_to_undirect:
             if not (parent, node) in self.oriented:
                 # Undirect parent -> node
-                graph_util.remove_edge(graph, parent, node)
+                graph_util.remove_dir_edge(graph, parent, node)
                 graph_util.add_undir_edge(graph, parent, node)
                 self.visited.add(node)
                 self.visited.add(parent)
@@ -117,8 +116,8 @@ class MeekRules:
 
     def direct(self, node_1, node_2, graph):
         #print("Int Directing " + str(node_1) + " " + str(node_2))
-        graph_util.remove_edge(graph, node_1, node_2)
-        graph_util.remove_edge(graph, node_2, node_1)
+        graph_util.remove_dir_edge(graph, node_1, node_2)
+        graph_util.remove_dir_edge(graph, node_2, node_1)
         graph_util.add_dir_edge(graph, node_1, node_2)
         self.visited.update([node_1, node_2])
         # node_1 -> node_2 edge

@@ -195,6 +195,7 @@ class FGES:
             if self.checkpoint_frequency > 0 and (time.time() - self.last_checkpoint) > self.checkpoint_frequency:
                 self.create_checkpoint()
                 self.last_checkpoint = time.time()
+
             arrow = self.sorted_arrows.pop(0)
             x = arrow.a
             y = arrow.b
@@ -203,23 +204,17 @@ class FGES:
                     (not graph_util.adjacent(self.graph, x, y)) or (graph_util.has_dir_edge(self.graph, y, x)):
                 continue
 
-            diff = set(arrow.na_y_x)
-            diff = diff - arrow.h_or_t
-
             if (not self.valid_delete(x, y, arrow.h_or_t, arrow.na_y_x)):
                 continue
 
             H = arrow.h_or_t
             bump = arrow.bump
 
-            self.delete(self.graph, x, y, H)
+            self.delete(x, y, H)
 
             meek_rules = MeekRules()
-            print(x)
-            meek_rules.orient_implied_subset(self.graph, set([x]), in_bes = self.in_bes)
-            meek_rules.orient_implied_subset(self.graph, set([y]), in_bes = self.in_bes)
-            for (node_1, node_2) in meek_rules.oriented:
-                graph_util.undir_to_dir(self.graph, node_1, node_2, self.in_bes)
+            meek_rules.orient_implied_subset(self.graph, set([x]))
+            meek_rules.orient_implied_subset(self.graph, set([y]))
 
             self.total_score += bump
             self.clear_arrow(x, y)
@@ -340,8 +335,6 @@ class FGES:
         # Runs meek rules on the changed adjacencies
         meek_rules = MeekRules(undirect_unforced_edges=True)
         meek_rules.orient_implied_subset(self.graph, nodes)
-        for (node_1, node_2) in meek_rules.oriented:
-            graph_util.undir_to_dir(self.graph, node_1, node_2, self.in_bes)
         return meek_rules.get_visited()
 
     def valid_insert(self, x, y, T, na_y_x):
@@ -461,18 +454,29 @@ class FGES:
         self.graph.add_edge(x, y)
 
         for node in T:
-            graph_util.undir_to_dir(self.graph, node, y, self.in_bes)
+            graph_util.undir_to_dir(self.graph, node, y)
 
         return True
 
-    def delete(self, graph, x, y, H):
-        graph_util.remove_edge(self.graph, x, y)
-        graph_util.remove_edge(self.graph, y, x)
+    def delete(self, x, y, H):
+        # Remove any edge between x and y
+        graph_util.remove_dir_edge(self.graph, x, y)
+        graph_util.remove_dir_edge(self.graph, y, x)
 
+        # H is the set of neighbors of y that are adjacent to x
         for node in H:
-            graph_util.undir_to_dir(self.graph, y, node, self.in_bes)
-            graph_util.undir_to_dir(self.graph, x, node, self.in_bes)
-            self.removed_edges.add((x, y))
+            if (graph_util.has_dir_edge(self.graph, node, y)
+                    or graph_util.has_dir_edge(self.graph, node, x)):
+                continue
+
+            # Direct the edge y --- node as y --> node
+            graph_util.undir_to_dir(self.graph, y, node)
+
+            # If x --- node is undirected, direct it as x --> node
+            if graph_util.has_undir_edge(self.graph, x, node):
+                graph_util.undir_to_dir(self.graph, x, node)
+
+        self.removed_edges.add((x, y))
 
     def add_arrow(self, a, b, na_y_x, h_or_t, bump):
         """Add arrow a->b with bump "bump" and conditioning sets na_y_x and h_or_t to sorted arrows list"""
