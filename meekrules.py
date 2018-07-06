@@ -3,7 +3,7 @@ import itertools
 
 
 class MeekRules:
-    def __init__(self, undirect_unforced_edges=True):
+    def __init__(self, undirect_unforced_edges=True, knowledge=None):
         # Unforced parents should be undirected before orienting
         self.undirect_unforced_edges = undirect_unforced_edges
         self.init_nodes = []
@@ -11,6 +11,7 @@ class MeekRules:
         self.visited = set()
         self.direct_stack = []
         self.oriented = set()
+        self.knowledge=knowledge
 
     def orient_implied_subset(self, graph, node_subset):
         self.node_subset = node_subset
@@ -64,12 +65,19 @@ class MeekRules:
         did_unorient = False
 
         for parent in parents_to_undirect:
-            if not (parent, node) in self.oriented:
+            if self.knowledge is not None:
+                must_orient = self.knowledge.is_required(parent, node) or \
+                              self.knowledge.is_forbidden(node, parent)
+            else:
+                must_orient = False
+
+            if not (parent, node) in self.oriented and not must_orient:
                 # Undirect parent -> node
                 graph_util.remove_dir_edge(graph, parent, node)
                 graph_util.add_undir_edge(graph, parent, node)
                 self.visited.add(node)
                 self.visited.add(parent)
+                print(f"unorienting {parent} -> {node}")
                 did_unorient = True
 
         if did_unorient:
@@ -79,7 +87,6 @@ class MeekRules:
             self.direct_stack.append(node)
 
     def run_meek_rules(self, node, graph, knowledge):
-        pass
         self.run_meek_rule_one(node, graph, knowledge)
         self.run_meek_rule_two(node, graph, knowledge)
         self.run_meek_rule_three(node, graph, knowledge)
@@ -115,13 +122,18 @@ class MeekRules:
                         self.direct(node_b, node_c, graph)
 
     def direct(self, node_1, node_2, graph):
-        #print("Int Directing " + str(node_1) + " " + str(node_2))
+        # print("Int Directing " + str(node_1) + " " + str(node_2))
+        if self.knowledge is not None:
+            if self.knowledge.is_forbidden(node_1, node_2):
+                return
+
         graph_util.remove_dir_edge(graph, node_1, node_2)
         graph_util.remove_dir_edge(graph, node_2, node_1)
         graph_util.add_dir_edge(graph, node_1, node_2)
         self.visited.update([node_1, node_2])
         # node_1 -> node_2 edge
-        if (node_1, node_2) not in self.oriented and (node_2, node_1) not in self.oriented:
+        if (node_1, node_2) not in self.oriented and (
+        node_2, node_1) not in self.oriented:
             self.oriented.add((node_1, node_2))
             self.direct_stack.append(node_2)
 
@@ -136,24 +148,16 @@ class MeekRules:
             node_a = adjacencies[index_one]
             node_c = adjacencies[index_two]
             self.r2_helper(node_a, node_b, node_c, graph, knowledge)
+            self.r2_helper(node_b, node_a, node_c, graph, knowledge)
+            self.r2_helper(node_a, node_c, node_b, graph, knowledge)
+            self.r2_helper(node_c, node_a, node_b, graph, knowledge)
 
     def r2_helper(self, a, b, c, graph, knowledge):
-        if graph_util.has_undir_edge(graph, a, b) and (a, b) not in self.oriented and (b, a) not in self.oriented:
-            if graph_util.has_dir_edge(graph, a, c) and graph_util.has_dir_edge(graph, c, b):
-                #print("R21: " + str(a) + " " + str(b))
-                self.direct(a, b, graph)
-            if graph_util.has_dir_edge(graph, b, c) and graph_util.has_dir_edge(graph, c, a):
-                #print("R22: " + str(b) + " " + str(a))
-                self.direct(b, a, graph)
-        if graph_util.has_undir_edge(graph, c, b) and (b, c) not in self.oriented and (c, b) not in self.oriented:
-            if graph_util.has_dir_edge(graph, c, a) and graph_util.has_dir_edge(graph, a, b):
-                #print("R23: " + str(c) + " " + str(b))
-                self.direct(c, b, graph)
-            if graph_util.has_dir_edge(graph, b, a) and graph_util.has_dir_edge(graph, a, c):
-                #print("R24: " + str(b) + " " + str(c))
-                self.direct(b, c, graph)
-
-
+        if graph_util.has_dir_edge(graph, a, b) and \
+                graph_util.has_dir_edge(graph, b, c) and \
+                graph_util.has_dir_edge(graph, a, c):
+            if self.is_arrowpoint_allowed(graph, a, c, knowledge):
+                self.direct(a, c, graph)
 
     def run_meek_rule_three(self, node, graph, knowledge):
         '''
@@ -178,13 +182,49 @@ class MeekRules:
                         # print("R3: " + str(node_a) + " " + str(node))
                         self.direct(node_a, node, graph)
 
-    def run_meek_rule_four(self, node, graph, knowledge):
-        # TODO#Knowledge: This only runs when there is knowledge, so unimplemented for now
-        pass
+    def run_meek_rule_four(self, a, graph, knowledge):
+        if knowledge is None:
+            return
 
-    def is_arrowpoint_allowed(self, graph, node_b, node_c, knowledge):
-        # TODO#Knowledge implementation
-        return True
+        adjacent_nodes = graph_util.adjacent_nodes(graph, a)
+        for c in adjacent_nodes:
+            adjacent_nodes.remove(c)
+            all_combinations = itertools.combinations(adjacent_nodes, 2)
+            for b, d in all_combinations:
+                if not graph_util.adjacent(graph, a, b) and \
+                   graph_util.adjacent(graph, a, d) and \
+                   graph_util.adjacent(graph, b, c) and \
+                   graph_util.adjacent(graph, d, c) and \
+                   graph_util.adjacent(graph, a, c):
+                    if graph_util.has_dir_edge(graph, b, c) and \
+                       graph_util.has_dir_edge(graph, c, d) and \
+                       graph_util.has_undir_edge(graph, a, d):
+                        if self.is_arrowpoint_allowed(a, c, knowledge):
+                            if not graph_util.is_unshielded_collider(graph, b, a, d):
+                                continue
+
+                            if self.is_arrowpoint_allowed(c, d, knowledge):
+                                self.direct(c, d, graph)
+                                continue
+                    e = d
+                    d = b
+                    b = e
+                    if graph_util.has_dir_edge(graph, b, c) and \
+                        graph_util.has_dir_edge(graph, c, d) and \
+                        graph_util.has_undir_edge(graph, a, d):
+                        if self.is_arrowpoint_allowed(a, c, knowledge):
+                            if not graph_util.is_unshielded_collider(graph, b, a, d):
+                                continue
+                            if self.is_arrowpoint_allowed(c, d, knowledge):
+                                self.direct(c, d, graph)
+                                continue
+
+    def is_arrowpoint_allowed(self, graph, from_node, to_node, knowledge):
+        if knowledge is None:
+            return True
+
+        return not knowledge.is_required(to_node, from_node) and \
+               not knowledge.is_forbidden(from_node, to_node)
 
     def get_visited(self):
         """ This is what FGES actually uses """
