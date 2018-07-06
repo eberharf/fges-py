@@ -7,6 +7,7 @@ import numpy as np
 import time
 import dill
 import os
+from knowledge import Knowledge
 
 class Arrow:
 
@@ -35,7 +36,7 @@ class FGES:
     """
 
     def __init__(self, variables, score, sparsity, filename='', checkpoint_frequency=0,
-                 save_name=None):
+                 save_name=None, knowledge=None):
         self.top_graphs = []
         self.last_checkpoint = time.time()
         # How often fges-py will save a checkpoint of the data
@@ -66,6 +67,16 @@ class FGES:
         self.removed_edges = set()
         self.filename = filename
         self.in_bes = False
+        self.knowledge=knowledge
+
+    def set_knowledge(self, knowledge):
+        if not isinstance(knowledge, Knowledge):
+            raise TypeError("knowledge must be of type Knowledge")
+        else:
+            self.knowledge = knowledge
+
+    def exists_knowledge(self):
+        return not self.knowledge is None
 
     def get_dict(self):
         return {"graph": self.graph,
@@ -86,12 +97,12 @@ class FGES:
         if self.graph is None:
             self.graph = nx.DiGraph()
             self.graph.add_nodes_from(self.variables)
-            #print("Created Graph with nodes: ", self.graph.nodes())
+            # print("Created Graph with nodes: ", self.graph.nodes())
 
             # for now, there is no knowledge and faithfulness is assumed
-            # TODO: self.addRequiredEdges()
+            self.add_required_edges()
 
-            self.initialize_forward_edges_from_empty_graph() # Adds all edges that have positive bump
+            self.initialize_forward_edges_from_empty_graph()  # Adds all edges that have positive bump
 
         # Step 1: Run FES and BES with heuristic
         # mode. The mode is used in reevaluate_forward
@@ -112,10 +123,10 @@ class FGES:
         # Step 1: Run FES and BES with covernoncolliders
         # mode. The mode is used in reevaluate_forward
 
-        #self.mode = "covernoncolliders"
-        #self.fes()
-        #self.bes()
-        #print(self.graph.edges())
+        # self.mode = "covernoncolliders"
+        # self.fes()
+        # self.bes()
+        # print(self.graph.edges())
         return self.get_dict()
 
     def fes(self):
@@ -212,9 +223,9 @@ class FGES:
 
             self.delete(x, y, H)
 
-            meek_rules = MeekRules()
-            meek_rules.orient_implied_subset(self.graph, set([x]))
-            meek_rules.orient_implied_subset(self.graph, set([y]))
+            meek_rules = MeekRules(self.knowledge)
+            meek_rules.orient_implied_subset(self.graph, set([x]), self.knowledge)
+            meek_rules.orient_implied_subset(self.graph, set([y]), self.knowledge)
 
             self.total_score += bump
             self.clear_arrow(x, y)
@@ -239,20 +250,29 @@ class FGES:
 
     def initialize_arrows_backwards(self):
         for (node_1, node_2) in self.graph.edges():
-
+            if self.exists_knowledge():
+                if not self.knowledge.no_edge_required(node_1, node_2):
+                    continue
             self.clear_arrow(node_1, node_2)
             self.clear_arrow(node_2, node_1)
 
             self.calculate_arrows_backward(node_1, node_2)
 
-            self.stored_neighbors[node_1] = graph_util.neighbors(self.graph, node_1)
-            self.stored_neighbors[node_2] = graph_util.neighbors(self.graph, node_2)
+            self.stored_neighbors[node_1] = graph_util.neighbors(self.graph,
+                                                                 node_1)
+            self.stored_neighbors[node_2] = graph_util.neighbors(self.graph,
+                                                                 node_2)
 
     def calculate_arrows_backward(self, a, b):
         """Finds all edges with negative bump"""
+
+        if self.exists_knowledge():
+            if not self.knowledge.no_edge_required(a, b):
+                return
+
         na_y_x = graph_util.get_na_y_x(self.graph, a, b)
         _na_y_x = list(na_y_x)
-        _depth  = len(_na_y_x)
+        _depth = len(_na_y_x)
 
         for i in range(_depth + 1):
             choices = itertools.combinations(range(0, _depth), i)
@@ -261,12 +281,16 @@ class FGES:
                 h = set(_na_y_x)
                 h = h - diff
 
+                if self.exists_knowledge():
+                    if not self.valid_set_by_knowledge(b, h):
+                        continue
+
                 bump = self.delete_eval(a, b, diff, na_y_x)
 
                 if bump > 0:
-                    print("Evaluated removal of an arrow " + str(a) + " -> " + str(b) + " with bump: " + str(bump));
+                    print("Evaluated removal of an arrow " + str(
+                        a) + " -> " + str(b) + " with bump: " + str(bump));
                     self.add_arrow(a, b, na_y_x, h, bump)
-
 
     def delete_eval(self, x, y, diff, na_y_x):
         """Evaluates the bump of removing edge X-->Y"""
@@ -276,12 +300,12 @@ class FGES:
         return -1 * self.score_graph_change(y, a, x)
 
     def reevaluate_forward(self, to_process, arrow):
-        #print("Re-evaluate forward with " + str(to_process) + " " + str(arrow))
+        # print("Re-evaluate forward with " + str(to_process) + " " + str(arrow))
         for node in to_process:
             if self.mode == "heuristic":
                 nzero_effect_nodes = self.effect_edges_graph.get(node)
-                #print("Re-evaluate forward. Currently on node: " + str(node))
-                #print("nzero-effect-nodes: " + str(nzero_effect_nodes))
+                # print("Re-evaluate forward. Currently on node: " + str(node))
+                # print("nzero-effect-nodes: " + str(nzero_effect_nodes))
             elif self.mode == "covernoncolliders":
                 g = set()
                 for n in graph_util.adjacent_nodes(self.graph, node):
@@ -320,36 +344,61 @@ class FGES:
                     self.calculate_arrows_backward(adj_node, node)
                     self.calculate_arrows_backward(node, adj_node)
 
-
-    def knowledge(self):
-        return None
-
     def reapply_orientation(self, x, y, new_arrows):
         to_process = set([x, y])
         if new_arrows is not None:
             to_process.update(new_arrows)
 
-        return self.meek_orient_restricted(to_process, self.knowledge())
+        return self.meek_orient_restricted(to_process, self.knowledge)
 
     def meek_orient_restricted(self, nodes, knowledge):
         # Runs meek rules on the changed adjacencies
-        meek_rules = MeekRules(undirect_unforced_edges=True)
-        meek_rules.orient_implied_subset(self.graph, nodes)
+        meek_rules = MeekRules(undirect_unforced_edges=True,
+                               knowledge=knowledge)
+        meek_rules.orient_implied_subset(self.graph, nodes, knowledge)
         return meek_rules.get_visited()
 
     def valid_insert(self, x, y, T, na_y_x):
         union = set(T)
+
+        if self.exists_knowledge():
+            if self.knowledge.is_forbidden(x, y):
+                return False
+            for node in union:
+                if self.knowledge.is_forbidden(node, y):
+                    return False
+
         if na_y_x != set([]):
             union.update(na_y_x)
         return graph_util.is_clique(self.graph, union) and \
-            not graph_util.exists_unblocked_semi_directed_path(
-                self.graph, y, x, union, self.cycle_bound)
+               not graph_util.exists_unblocked_semi_directed_path(
+                   self.graph, y, x, union, self.cycle_bound)
 
     def valid_delete(self, x, y, H, na_y_x):
-        #TODO Knowledge
+
+        if self.exists_knowledge():
+            for h in H:
+                if self.knowledge.is_forbidden(x, h):
+                    return False
+                if self.knowledge.is_forbidden(y, h):
+                    return False
+
         diff = set(na_y_x)
         diff = diff - H
         return graph_util.is_clique(self.graph, diff)
+
+    def add_required_edges(self):
+        """Tetrad implementation is really confusing and seems to be
+        mostly checks to ensure required edges don't form a cycle"""
+        if not self.exists_knowledge():
+            return
+
+        for edge in self.knowledge.required_edges:
+            # Make sure the required edges aren't a cycle
+            if not edge[0] in graph_util.get_ancestors(self.graph, edge[1]):
+                graph_util.remove_dir_edge(self.graph, edge[1], edge[0])
+                graph_util.add_dir_edge(self.graph, edge[0], edge[1])
+                print(f"Adding edge from knowledge: {edge[0]}->{edge[1]}")
 
     def initialize_two_step_edges(self, nodes):
         for node in nodes:
@@ -371,16 +420,22 @@ class FGES:
                     g.update(m)
 
             for x in g:
-                assert(x is not node)
-                #TODO: Knowledge
+                assert (x is not node)
+                if self.exists_knowledge():
+                    if self.knowledge.is_forbidden(node,
+                                                   x) or self.knowledge.is_forbidden(
+                            x, node):
+                        continue
+                    # again, what's the point?
+                    if not self.valid_set_by_knowledge(node, set()):
+                        continue
 
-                #TODO: Adjacencies
+                # TODO: Adjacencies
 
                 if (x, node) in self.removed_edges:
                     continue
 
                 self.calculate_arrows_forward(x, node)
-
 
     def initialize_forward_edges_from_empty_graph(self):
         """
@@ -399,10 +454,21 @@ class FGES:
         mean that if one gets modified, all will?
         """
         for i in range(len(self.variables)):
+            self.stored_neighbors[i] = set()
             for j in range(i + 1, len(self.variables)):
-                self.stored_neighbors[i] = set()
+                if self.exists_knowledge():
+                    if self.knowledge.is_forbidden(i,
+                                                   j) and self.knowledge.is_forbidden(
+                            j, i):
+                        continue
+                    # literally don't know the point of these next 2 lines
+                    # because valid_set_by_knowledge on the empty set should
+                    # always return True, but it's in Tetrad...
+                    if not self.valid_set_by_knowledge(i, set()):
+                        continue
                 bump = self.score.local_score_diff(j, i)
-                print("Evaluated starting arrow " + str(j) + " -> " + str(i) + " with bump: " + str(bump))
+                print("Evaluated starting arrow " + str(j) + " -> " + str(
+                    i) + " with bump: " + str(bump))
                 if bump > 0:
                     self.mark_nonzero_effect(i, j)
                     parent_node = j
@@ -429,7 +495,7 @@ class FGES:
 
     def insert_eval(self, x, y, T, na_y_x):
         """Evaluates bump for adding edge x->y given conditioning sets T and na_y_x"""
-        assert(x is not y)
+        assert (x is not y)
         _na_y_x = set(na_y_x)
         _na_y_x.update(T)
         _na_y_x.update(graph_util.get_parents(self.graph, y))
@@ -444,11 +510,11 @@ class FGES:
         Definition 12
 
         """
-        print("Doing an actual insertion with " + str(x) + " -> " + str(y) + " with T: " + str(T) + " and bump: " + str(bump))
+        print("Doing an actual insertion with " + str(x) + " -> " + str(
+            y) + " with T: " + str(T) + " and bump: " + str(bump))
 
         if graph_util.adjacent(self.graph, x, y):
             return False
-
 
         # Adds directed edge
         self.graph.add_edge(x, y)
@@ -523,6 +589,10 @@ class FGES:
             print("Returning early...")
             return
 
+        if self.exists_knowledge():
+            if self.knowledge.is_forbidden(a, b):
+                return
+
         #print("Get neighbors for " + str(b) + " returns " + str(graph_util.neighbors(self.graph, b)))
 
         self.stored_neighbors[b] = graph_util.neighbors(self.graph, b)
@@ -579,6 +649,15 @@ class FGES:
                 previous_cliques = new_cliques
                 new_cliques = set()
         outer_loop()
+
+    def valid_set_by_knowledge(self, x, subset):
+        """Use knowledge to decide if an insert of delete does not orient edges
+        in a forbidden way. If some orientation in the subset is forbidden,
+        the whole subset is forbidden"""
+        for node in subset:
+            if self.knowledge.is_forbidden(x, node):
+                return False
+        return True
 
     def create_checkpoint(self):
         with open(self.save_name + '-checkpoint.pkl', 'wb') as f:
