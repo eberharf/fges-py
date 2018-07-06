@@ -67,7 +67,7 @@ class FGES:
         self.removed_edges = set()
         self.filename = filename
         self.in_bes = False
-        self.knowledge=knowledge
+        self.knowledge = knowledge
 
     def set_knowledge(self, knowledge):
         if not isinstance(knowledge, Knowledge):
@@ -223,7 +223,7 @@ class FGES:
 
             self.delete(x, y, H)
 
-            meek_rules = MeekRules(self.knowledge)
+            meek_rules = MeekRules(knowledge=self.knowledge)
             meek_rules.orient_implied_subset(self.graph, set([x]), self.knowledge)
             meek_rules.orient_implied_subset(self.graph, set([y]), self.knowledge)
 
@@ -398,7 +398,7 @@ class FGES:
             if not edge[0] in graph_util.get_ancestors(self.graph, edge[1]):
                 graph_util.remove_dir_edge(self.graph, edge[1], edge[0])
                 graph_util.add_dir_edge(self.graph, edge[0], edge[1])
-                print(f"Adding edge from knowledge: {edge[0]}->{edge[1]}")
+                print(f"Adding edge from knowledge: {edge[0]} -> {edge[1]}")
 
     def initialize_two_step_edges(self, nodes):
         for node in nodes:

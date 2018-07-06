@@ -11,15 +11,15 @@ class MeekRules:
         self.visited = set()
         self.direct_stack = []
         self.oriented = set()
-        self.knowledge=knowledge
+        self.knowledge = knowledge
 
-    def orient_implied_subset(self, graph, node_subset):
+    def orient_implied_subset(self, graph, node_subset, knowledge):
         self.node_subset = node_subset
         self.visited.update(node_subset)
-        self.orient_using_meek_rules_locally(None, graph)
+        self.orient_using_meek_rules_locally(knowledge, graph)
 
     def orient_implied(self, graph):
-        self.orient_implied_subset(graph, graph.nodes())
+        self.orient_implied_subset(graph, graph.nodes(), self.knowledge)
 
     def orient_using_meek_rules_locally(self, knowledge, graph):
         """Orient graph using the four Meek rules"""
@@ -70,7 +70,6 @@ class MeekRules:
                               self.knowledge.is_forbidden(node, parent)
             else:
                 must_orient = False
-
             if not (parent, node) in self.oriented and not must_orient:
                 # Undirect parent -> node
                 graph_util.remove_dir_edge(graph, parent, node)
@@ -155,7 +154,7 @@ class MeekRules:
     def r2_helper(self, a, b, c, graph, knowledge):
         if graph_util.has_dir_edge(graph, a, b) and \
                 graph_util.has_dir_edge(graph, b, c) and \
-                graph_util.has_dir_edge(graph, a, c):
+                graph_util.has_undir_edge(graph, a, c):
             if self.is_arrowpoint_allowed(graph, a, c, knowledge):
                 self.direct(a, c, graph)
 
@@ -191,11 +190,11 @@ class MeekRules:
             adjacent_nodes.remove(c)
             all_combinations = itertools.combinations(adjacent_nodes, 2)
             for b, d in all_combinations:
-                if not graph_util.adjacent(graph, a, b) and \
+                if not (graph_util.adjacent(graph, a, b) and \
                    graph_util.adjacent(graph, a, d) and \
                    graph_util.adjacent(graph, b, c) and \
                    graph_util.adjacent(graph, d, c) and \
-                   graph_util.adjacent(graph, a, c):
+                   graph_util.adjacent(graph, a, c)):
                     if graph_util.has_dir_edge(graph, b, c) and \
                        graph_util.has_dir_edge(graph, c, d) and \
                        graph_util.has_undir_edge(graph, a, d):
@@ -203,6 +202,12 @@ class MeekRules:
                             if not graph_util.is_unshielded_collider(graph, b, a, d):
                                 continue
 
+                            # Copied from Tetrad, but...
+                            # I'm pretty sure that this part is wrong. 2 reasons
+                            # 1. we already check for a dir_edge between
+                            #    c and d, so why would we need to direct
+                            # 2. Picture in Chickering 2013 suggests should
+                            #    be directing a->d
                             if self.is_arrowpoint_allowed(c, d, knowledge):
                                 self.direct(c, d, graph)
                                 continue

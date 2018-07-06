@@ -15,11 +15,12 @@ forbids the edge X --> Y, then it forbids any edge which connects a MyNode
 named "X" to a MyNode named "Y", even if the underlying MyNodes themselves
 named "X" and "Y", respectively, are not the same.
 """
+import graph_util
 
 class Knowledge:
     def __init__(self):
-        self.required_edges = {}
-        self.forbidden_edges = {}
+        self.required_edges = set()
+        self.forbidden_edges = set()
         self.tier_map = {}
         self.forbidden_within_tiers = {}
 
@@ -39,9 +40,11 @@ class Knowledge:
         self.tier_map[node] = tier
 
     def is_forbidden_by_tiers(self, x, y):
+        if not x in self.tier_map.keys() or not y in self.tier_map.keys():
+            return False
         if self.tier_map[x] == self.tier_map[y]:
             return self.forbidden_within_tiers[x] == self.forbidden_within_tiers[y]
-        return self.tier_map[x] < self.tier_map[y]
+        return self.tier_map[x] > self.tier_map[y]
 
     def set_tier_forbidden_within(self, tier, forbidden):
         self.forbidden_within_tiers[tier] = forbidden
@@ -52,5 +55,22 @@ class Knowledge:
         else:
             return (x, y) in self.forbidden_edges
 
+    def no_edge_required(self, x, y):
+        return not (self.is_required(x, y) or self.is_required(y, x))
+
     def is_required(self, x, y):
         return (x, y) in self.required_edges
+
+    def is_violated_by(self, graph):
+        for edge in self.required_edges:
+            if not graph_util.has_dir_edge(graph, edge[0], edge[1]):
+                return True
+
+        for edge in graph.edges:
+            if graph_util.has_undir_edge(graph, edge[0], edge[1]):
+                continue
+
+            if self.is_forbidden(edge[0], edge[1]):
+                return True
+
+        return False
