@@ -174,5 +174,39 @@ class TestCheckpoints(unittest.TestCase):
         for i in range(1, 6):
             self.checkpoint_verify("../data/collider_{}.txt".format(i))
 
+            
+class TestKnowledge(unittest.TestCase):
+    def test_simple_forbidden(self):
+        wisdom = Knowledge()
+        for i in range(4):
+            for j in range(i):
+                wisdom.set_forbidden(i, j)
+                wisdom.set_forbidden(j, i)
+        result = run_fges("../data/linear_1.txt", knowledge=wisdom)
+        assert len(result['graph'].edges) == 0
+
+    def test_random_required(self):
+        result = run_fges("../data/40_random.txt")
+        assert len(result['graph'].edges) == 0
+
+        wisdom = Knowledge()
+        x = random.randint(0, 39)
+        y = random.randint(0, 39)
+        while y == x:
+            y = random.randint(0, 39)
+        wisdom.set_required(x, y)
+        result = run_fges("../data/40_random.txt", knowledge=wisdom)
+        assert not wisdom.is_violated_by(result['graph'])
+
+    def test_random_forbidden(self):
+        result = run_fges("../data/50_fully_connected.txt")
+        edges = list(result['graph'].edges)
+        edge = random.choice(edges)
+        wisdom = Knowledge()
+        wisdom.set_forbidden(edge[0], edge[1])
+        wisdom.set_forbidden(edge[1], edge[0])
+        knowledge_result = run_fges("../data/50_fully_connected.txt", knowledge=wisdom)
+        assert not graph_util.adjacent(knowledge_result['graph'], edge[0], edge[1])
+
 if __name__ == "__main__":
     unittest.main()
