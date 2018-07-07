@@ -224,8 +224,8 @@ class FGES:
             self.delete(x, y, H)
 
             meek_rules = MeekRules(knowledge=self.knowledge)
-            meek_rules.orient_implied_subset(self.graph, set([x]), self.knowledge)
-            meek_rules.orient_implied_subset(self.graph, set([y]), self.knowledge)
+            meek_rules.orient_implied_subset(self.graph, set([x]))
+            meek_rules.orient_implied_subset(self.graph, set([y]))
 
             self.total_score += bump
             self.clear_arrow(x, y)
@@ -355,7 +355,7 @@ class FGES:
         # Runs meek rules on the changed adjacencies
         meek_rules = MeekRules(undirect_unforced_edges=True,
                                knowledge=knowledge)
-        meek_rules.orient_implied_subset(self.graph, nodes, knowledge)
+        meek_rules.orient_implied_subset(self.graph, nodes)
         return meek_rules.get_visited()
 
     def valid_insert(self, x, y, T, na_y_x):

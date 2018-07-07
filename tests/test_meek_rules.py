@@ -1,8 +1,9 @@
 import unittest
 import networkx as nx
 
-from meekrules import *
+from meekrules import MeekRules
 from graph_util import *
+from knowledge import Knowledge
 
 def make_graph(num_vertices, edges):
     graph = nx.DiGraph()
@@ -52,7 +53,6 @@ class SingleRuleTests(unittest.TestCase):
         assert has_undir_edge(g, 0, 2)
         assert has_undir_edge(g, 1, 2)
 
-
     def test_rule_2(self):
         # 0 --> 1 --> 2 and 0 --- 2  => 0 --> 2
         g = make_graph(3, [(0, 1), (1, 2), (0, 2), (2, 0)])
@@ -100,6 +100,26 @@ class SingleRuleTests(unittest.TestCase):
         assert has_dir_edge(g, 1, 2)
         assert has_dir_edge(g, 3, 2)
         assert has_dir_edge(g, 1, 3)
+
+    def test_rule_4(self):
+        g = make_graph(4, [(0, 1), (1, 0),
+                           (0, 2), (2, 0),
+                           (0, 3), (3, 0),
+                           (1, 2),
+                           (2, 3)])
+        k = Knowledge()
+        k.set_forbidden(1, 3)
+
+        meek = MeekRules(undirect_unforced_edges=False, knowledge=k)
+        meek.orient_implied_subset(g, [0])
+
+        assert len(g.edges()) == 7
+        assert has_dir_edge(g, 1, 2)
+        assert has_dir_edge(g, 2, 3)
+        assert has_dir_edge(g, 0, 3)
+        assert has_undir_edge(g, 0, 1)
+        assert has_undir_edge(g, 0, 2)
+
 
 class LargeGraphTests(unittest.TestCase):
 
@@ -227,3 +247,6 @@ class LargeGraphTests(unittest.TestCase):
         assert has_dir_edge(g, 8, 9)
         assert has_undir_edge(g, 8, 7)
         assert has_undir_edge(g, 8, 5)
+
+if __name__ == "__main__":
+    unittest.main()
