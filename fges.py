@@ -82,7 +82,8 @@ class FGES:
         return {"graph": self.graph,
                 "sparsity": self.sparsity,
                 "filename": self.filename,
-                "nodes": len(self.variables)}
+                "nodes": len(self.variables),
+                "knowledge": self.knowledge}
 
     @classmethod
     def load_checkpoint(cls, filename):
