@@ -36,10 +36,10 @@ def undir_to_dir(g, x, y):
     if g.has_edge(y, x) and g.has_edge(x, y):
         # Current edge is x --- y
         g.remove_edge(y, x)
-        print("Directing " + str(x) + " -> " + str(y))
+        # print("Directing " + str(x) + " -> " + str(y))
     elif g.has_edge(x, y):
         # Current edge is x --> y
-        print("No-op Directing " + str(x) + " -> " + str(y))
+        # print("No-op Directing " + str(x) + " -> " + str(y))
     elif g.has_edge(y, x):
         # Current edge is y --> x
         raise AssertionError("undir_to_dir: trying to reverse a directed edge")

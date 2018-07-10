@@ -36,7 +36,7 @@ class FGES:
     """
 
     def __init__(self, variables, score, sparsity, filename='', checkpoint_frequency=0,
-                 save_name=None, knowledge=None):
+                 save_name=None, knowledge=None, verbose=False):
         self.top_graphs = []
         self.last_checkpoint = time.time()
         # How often fges-py will save a checkpoint of the data
@@ -68,6 +68,7 @@ class FGES:
         self.filename = filename
         self.in_bes = False
         self.knowledge = knowledge
+        self.verbose = verbose
 
     def set_knowledge(self, knowledge):
         if not isinstance(knowledge, Knowledge):
@@ -230,7 +231,8 @@ class FGES:
 
             self.total_score += bump
             self.clear_arrow(x, y)
-            print("BES: Removed arrow " + str(x) + " -> " + str(y) + " with bump -" + str(bump))
+            if self.verbose:
+                print("BES: Removed arrow " + str(x) + " -> " + str(y) + " with bump -" + str(bump))
             visited = self.reapply_orientation(x, y, H)
 
             to_process = set()
@@ -289,7 +291,8 @@ class FGES:
                 bump = self.delete_eval(a, b, diff, na_y_x)
 
                 if bump > 0:
-                    print("Evaluated removal of an arrow " + str(
+                    if self.verbose:
+                        print("Evaluated removal of an arrow " + str(
                         a) + " -> " + str(b) + " with bump: " + str(bump));
                     self.add_arrow(a, b, na_y_x, h, bump)
 
@@ -399,7 +402,8 @@ class FGES:
             if not edge[0] in graph_util.get_ancestors(self.graph, edge[1]):
                 graph_util.remove_dir_edge(self.graph, edge[1], edge[0])
                 graph_util.add_dir_edge(self.graph, edge[0], edge[1])
-                print(f"Adding edge from knowledge: {edge[0]} -> {edge[1]}")
+                if self.verbose:
+                    print(f"Adding edge from knowledge: {edge[0]} -> {edge[1]}")
 
         for edge in self.knowledge.required_connections:
             graph_util.add_undir_edge(self.graph, edge[1], edge[0])
@@ -471,7 +475,8 @@ class FGES:
                     if not self.valid_set_by_knowledge(i, set()):
                         continue
                 bump = self.score.local_score_diff(j, i)
-                print("Evaluated starting arrow " + str(j) + " -> " + str(
+                if self.verbose:
+                    print("Evaluated starting arrow " + str(j) + " -> " + str(
                     i) + " with bump: " + str(bump))
                 if bump > 0:
                     self.mark_nonzero_effect(i, j)
@@ -479,8 +484,8 @@ class FGES:
                     child_node = i
                     self.add_arrow(parent_node, child_node, set(), set(), bump)
                     self.add_arrow(child_node, parent_node, set(), set(), bump)
-
-        print("Initialized forward edges from empty graph")
+        if self.verbose:
+            print("Initialized forward edges from empty graph")
 
     def mark_nonzero_effect(self, node_1, node_2):
         """
@@ -514,7 +519,8 @@ class FGES:
         Definition 12
 
         """
-        print("Doing an actual insertion with " + str(x) + " -> " + str(
+        if self.verbose:
+            print("Doing an actual insertion with " + str(x) + " -> " + str(
             y) + " with T: " + str(T) + " and bump: " + str(bump))
 
         if graph_util.adjacent(self.graph, x, y):
