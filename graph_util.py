@@ -39,6 +39,7 @@ def undir_to_dir(g, x, y):
         # print("Directing " + str(x) + " -> " + str(y))
     elif g.has_edge(x, y):
         # Current edge is x --> y
+        pass
         # print("No-op Directing " + str(x) + " -> " + str(y))
     elif g.has_edge(y, x):
         # Current edge is y --> x
