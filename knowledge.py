@@ -21,6 +21,7 @@ class Knowledge:
     def __init__(self):
         self.required_edges = set()
         self.forbidden_edges = set()
+        self.required_connections = set()
         self.tier_map = {}
         self.forbidden_within_tiers = {}
 
@@ -35,6 +36,12 @@ class Knowledge:
 
     def remove_required(self, x, y):
         self.required_edges -= {(x, y)}
+
+    def set_required_connection(self, x, y):
+        self.required_connections.add((x, y))
+
+    def remove_required_connection(self, x, y):
+        self.required_connections -= {(x, y)}
 
     def set_tier(self, node, tier):
         self.tier_map[node] = tier
@@ -56,7 +63,9 @@ class Knowledge:
             return (x, y) in self.forbidden_edges
 
     def no_edge_required(self, x, y):
-        return not (self.is_required(x, y) or self.is_required(y, x))
+        return not (self.is_required(x, y) or self.is_required(y, x) or
+                    (x, y) in self.required_connections or
+                    (y, x) in self.required_connections)
 
     def is_required(self, x, y):
         return (x, y) in self.required_edges

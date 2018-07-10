@@ -401,6 +401,9 @@ class FGES:
                 graph_util.add_dir_edge(self.graph, edge[0], edge[1])
                 print(f"Adding edge from knowledge: {edge[0]} -> {edge[1]}")
 
+        for edge in self.knowledge.required_connections:
+            graph_util.add_undir_edge(self.graph, edge[1], edge[0])
+
     def initialize_two_step_edges(self, nodes):
         for node in nodes:
 

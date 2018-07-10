@@ -232,5 +232,16 @@ class TestKnowledge(unittest.TestCase):
         assert_oriented_edge(edges, (1, 2))
         assert_oriented_edge(edges, (2, 3))
 
+    def test_required_connections(self):
+
+        wisdom = Knowledge()
+        wisdom.set_required_connection(0, 3)
+
+        result = run_fges("../data/linear_1.txt", knowledge=wisdom)
+        edges = result['graph'].edges()
+        print(edges)
+        assert (0, 3) in edges or (3, 0) in edges
+
+
 if __name__ == "__main__":
     unittest.main()
