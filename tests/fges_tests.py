@@ -1,6 +1,7 @@
 from SEMScore import *
 from fges import *
 import unittest
+import random
 
 def run_fges(data_file, **kwargs):
     '''
@@ -173,6 +174,74 @@ class TestCheckpoints(unittest.TestCase):
     def test_checkpoints(self):
         for i in range(1, 6):
             self.checkpoint_verify("../data/collider_{}.txt".format(i))
+
+
+class TestKnowledge(unittest.TestCase):
+    def test_simple_forbidden(self):
+        """forbids all edges in case of simple_linear_test"""
+        wisdom = Knowledge()
+        for i in range(4):
+            for j in range(i):
+                wisdom.set_forbidden(i, j)
+                wisdom.set_forbidden(j, i)
+        result = run_fges("../data/linear_1.txt", knowledge=wisdom)
+        assert len(result['graph'].edges) == 0
+
+    def test_random_required(self):
+        """requires an edge in a graph that would normally have no edges"""
+        result = run_fges("../data/40_random.txt")
+        assert len(result['graph'].edges) == 0
+
+        wisdom = Knowledge()
+        x = random.randint(0, 39)
+        y = random.randint(0, 39)
+        while y == x:
+            y = random.randint(0, 39)
+        wisdom.set_required(x, y)
+        result = run_fges("../data/40_random.txt", knowledge=wisdom)
+        print(x, y)
+        print(result['graph'].edges)
+        assert not wisdom.is_violated_by(result['graph'])
+
+    def test_random_forbidden(self):
+        """
+        generates graph, then forbids a random edge and regenerates, checking
+        for absence of edge
+        """
+        result = run_fges("../data/50_fully_connected.txt")
+        edges = list(result['graph'].edges)
+        edge = random.choice(edges)
+        wisdom = Knowledge()
+        wisdom.set_forbidden(edge[0], edge[1])
+        wisdom.set_forbidden(edge[1], edge[0])
+        knowledge_result = run_fges("../data/50_fully_connected.txt", knowledge=wisdom)
+        assert not graph_util.adjacent(knowledge_result['graph'], edge[0], edge[1])
+
+    def test_tiers(self):
+        '''
+        X1 --> X2 --> X3 --> X4
+
+        FGES should be able to orient all edges with knowledge
+        '''
+        wisdom = Knowledge()
+        for i in range(4):
+            wisdom.set_tier(i, i)
+        result = run_fges("../data/linear_1.txt", knowledge=wisdom)
+        edges = result['graph'].edges()
+        assert_oriented_edge(edges, (0, 1))
+        assert_oriented_edge(edges, (1, 2))
+        assert_oriented_edge(edges, (2, 3))
+
+    def test_required_connections(self):
+
+        wisdom = Knowledge()
+        wisdom.set_required_connection(0, 3)
+
+        result = run_fges("../data/linear_1.txt", knowledge=wisdom)
+        edges = result['graph'].edges()
+        print(edges)
+        assert (0, 3) in edges or (3, 0) in edges
+
 
 if __name__ == "__main__":
     unittest.main()
