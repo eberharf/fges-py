@@ -29,7 +29,6 @@ class MeekRules:
                 self.direct_stack.extend(
                     graph_util.adjacent_nodes(graph, node))
 
-
         # TODO: Combine loops
         for node in self.node_subset:
             self.run_meek_rules(node, graph)
@@ -40,12 +39,12 @@ class MeekRules:
 
         while last_node is not None:
             # print(last_node)
-            if (self.undirect_unforced_edges):
+            if self.undirect_unforced_edges:
                 self.undirect_unforced_edges_func(last_node, graph)
 
             self.run_meek_rules(last_node, graph)
             # print("past run_meek_rules")
-            if (len(self.direct_stack) > 0):
+            if len(self.direct_stack) > 0:
                 last_node = self.direct_stack.pop()
             else:
                 last_node = None
@@ -110,15 +109,17 @@ class MeekRules:
             self.r1_helper(node_c, node, node_a, graph)
 
     def r1_helper(self, node_a, node_b, node_c, graph):
-        if ((not graph_util.adjacent(graph, node_a, node_c)) and (graph_util.has_dir_edge(graph, node_a, node_b) or (node_a, node_b) in self.oriented) and graph_util.has_undir_edge(graph, node_b, node_c)):
-            if (not graph_util.is_unshielded_non_collider(graph, node_a, node_b, node_c)):
+        if ((not graph_util.adjacent(graph, node_a, node_c)) and
+                (graph_util.has_dir_edge(graph, node_a, node_b) or (node_a, node_b) in self.oriented) and
+                graph_util.has_undir_edge(graph, node_b, node_c)):
+            if not graph_util.is_unshielded_non_collider(graph, node_a, node_b, node_c):
                 return
 
             if self.is_arrowpoint_allowed(node_b, node_c):
-                #print("R1: " + str(node_b) + " " + str(node_c))
+                # print("R1: " + str(node_b) + " " + str(node_c))
                 if (node_a, node_c) not in self.oriented and (node_c, node_a) not in self.oriented and \
-                    (node_b, node_c) not in self.oriented and (node_c, node_b) not in self.oriented:
-                        self.direct(node_b, node_c, graph)
+                        (node_b, node_c) not in self.oriented and (node_c, node_b) not in self.oriented:
+                    self.direct(node_b, node_c, graph)
 
     def direct(self, node_1, node_2, graph):
         # print("Int Directing " + str(node_1) + " " + str(node_2))
@@ -131,8 +132,8 @@ class MeekRules:
         graph_util.add_dir_edge(graph, node_1, node_2)
         self.visited.update([node_1, node_2])
         # node_1 -> node_2 edge
-        if (node_1, node_2) not in self.oriented and (
-        node_2, node_1) not in self.oriented:
+        if (node_1, node_2) not in self.oriented and \
+                (node_2, node_1) not in self.oriented:
             self.oriented.add((node_1, node_2))
             self.direct_stack.append(node_2)
 
@@ -159,10 +160,10 @@ class MeekRules:
                 self.direct(a, c, graph)
 
     def run_meek_rule_three(self, node, graph):
-        '''
+        """
         A --- B, A --- X, A --- C, B --> X <-- C, B -/- C => A --> X
         The parameter node = X
-        '''
+        """
         # print("Running meek rule three", node)
         adjacencies = graph_util.adjacent_nodes(graph, node)
 
@@ -189,10 +190,10 @@ class MeekRules:
 
         for (b, c, d) in itertools.permutations(adjacent_nodes, 3):
             if (graph_util.has_undir_edge(graph, a, b) and
-                graph_util.has_dir_edge(graph, b, c) and
-                graph_util.has_dir_edge(graph, c, d) and
-                graph_util.has_undir_edge(graph, d, a) and
-                self.is_arrowpoint_allowed(a, d)):
+                    graph_util.has_dir_edge(graph, b, c) and
+                    graph_util.has_dir_edge(graph, c, d) and
+                    graph_util.has_undir_edge(graph, d, a) and
+                    self.is_arrowpoint_allowed(a, d)):
                 self.direct(a, d, graph)
 
     def is_arrowpoint_allowed(self, from_node, to_node):
