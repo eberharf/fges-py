@@ -11,7 +11,7 @@ from knowledge import Knowledge
 
 
 class Arrow:
-
+    __slots__ = ['a', 'b', 'na_y_x', 'h_or_t', 'bump', 'index']
     def __init__(self, a, b, na_y_x, hOrT, bump, arrow_index):
         self.a = a
         self.b = b

@@ -3,6 +3,9 @@ import itertools
 
 
 class MeekRules:
+    __slots__ = ['undirect_unforced_edges', 'init_nodes', 'node_subset',
+                 'visited', 'direct_stack', 'oriented', 'knowledge']
+
     def __init__(self, undirect_unforced_edges=True, knowledge=None):
         # Unforced parents should be undirected before orienting
         self.undirect_unforced_edges = undirect_unforced_edges
