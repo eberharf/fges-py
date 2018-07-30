@@ -17,6 +17,9 @@ parser.add_argument("save_name", type=str, help="File to save output to.")
 
 parser.add_argument("sparsity", type=float, help="Sparsity penalty to use.")
 
+parser.add_argument("corr_only", type=bool, default=False, help="Whether or not input is  \
+                                                 a correlation matrix. Defaults to False.")
+
 parser.add_argument("-c", "--checkpoint", action="store_true",
                     help="dataset is a FGES pickled checkpoint.")
 parser.add_argument("--checkpoint_frequency", type=int, default=0,
@@ -41,7 +44,7 @@ def main():
         fges = FGES(variables, score, args.sparsity,
                     filename=args.dataset,
                     checkpoint_frequency=args.checkpoint_frequency,
-                    save_name=args.save_name)
+                    save_name=args.save_name, corr_only=args.corr_only)
         start_time = time.time()
         result = fges.search()
 
