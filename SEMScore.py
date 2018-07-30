@@ -5,18 +5,21 @@ import math
 
 class SEMBicScore:
 
-    def __init__(self, dataset, penalty_discount):
+    def __init__(self, dataset, penalty_discount, corr_only=False):
         """ Initialize the SEMBicScore object. Assume that each
         row is a sample point, and each column is a variable
         """
-        dataset = np.array(dataset)
         assert len(dataset.shape) == 2
-
-        self.dataset = dataset
-        self.cov = np.cov(dataset, rowvar=False)
+        if not corr_only:
+            dataset = np.array(dataset)
+            self.dataset = dataset
+            self.cov = np.cov(dataset, rowvar=False)
+            self.corrcoef = np.corrcoef(dataset.transpose())
+        else:
+            self.corrcoef = np.array(dataset)
         self.sample_size = len(dataset)
         self.penalty = penalty_discount
-        self.corrcoef = np.corrcoef(dataset.transpose())
+
         self.cache = {}
         self.cache_hits = 0
         self.cache_misses = 0
