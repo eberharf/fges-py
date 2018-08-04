@@ -10,7 +10,7 @@ def run_fges(data_file, **kwargs):
     :return: DiGraph from fges.search()
     '''
     dataset = np.loadtxt(data_file, skiprows = 1)
-    score = SEMBicScore(dataset, 2)  # Initialize SEMBic Object
+    score = SEMBicScore(2, dataset=dataset)  # Initialize SEMBic Object
     variables = list(range(len(dataset[0])))
     print("Running FGES on graph with " + str(len(variables)) + " nodes.")
     fges = FGES(variables, score, **kwargs)
