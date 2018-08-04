@@ -5,7 +5,7 @@ import math
 
 class SEMBicScore:
 
-    def __init__(self, dataset, penalty_discount, corr_only=False):
+    def __init__(self, dataset, penalty_discount, corr_only=False, cache_interval=1):
         """ Initialize the SEMBicScore object. Assume that each
         row is a sample point, and each column is a variable
         """
@@ -21,8 +21,7 @@ class SEMBicScore:
         self.penalty = penalty_discount
 
         self.cache = {}
-        self.cache_hits = 0
-        self.cache_misses = 0
+        self.cache_interval = cache_interval
 
     def partial_corr(self, x, y, Z):
         """
@@ -51,28 +50,25 @@ class SEMBicScore:
             key1 = (frozenset({x, y}), Z1)
             if key1 not in self.cache:
                 term1 = self.recursive_partial_corr(x, y, Z1)
-                if len(Z1) > 0:
+                if len(Z1) > 0 and len(Z1) % self.cache_interval == 0:
                     self.cache[key1] = term1
             else:
-                self.cache_hits += 1
                 term1 = self.cache[key1]
 
             key2 = (frozenset({x, z0}), Z1)
             if key2 not in self.cache:
                 term2 = self.recursive_partial_corr(x, z0, Z1)
-                if len(Z1) > 0:
+                if len(Z1) > 0 and len(Z1) % self.cache_interval == 0:
                     self.cache[key2] = term2
             else:
-                self.cache_hits += 1
                 term2 = self.cache[key2]
 
             key3 = (frozenset({y, z0}), Z1)
             if key3 not in self.cache:
                 term3 = self.recursive_partial_corr(y, z0, Z1)
-                if len(Z1) > 0:
+                if len(Z1) > 0 and len(Z1) % self.cache_interval == 0:
                     self.cache[key3] = term3
             else:
-                self.cache_hits += 1
                 term3 = self.cache[key3]
 
             return (term1 - (term2 * term3)) / math.sqrt((1 - (term2 * term2)) * (1 - (term3 * term3)))
@@ -101,7 +97,7 @@ class SEMBicScore:
         if variance <= 0:
             return None
 
-        returnval = self.score(variance, p);
+        returnval = self.score(variance, p)
         return returnval
 
     def local_score_no_parents(self, node):
