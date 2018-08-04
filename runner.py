@@ -41,7 +41,7 @@ def main():
         score = SEMBicScore(dataset, args.sparsity) # Initialize SEMBic Object
         variables = list(range(len(dataset[0])))
         print("Running FGES on graph with " + str(len(variables)) + " nodes.")
-        fges = FGES(variables, score, args.sparsity,
+        fges = FGES(variables, score,
                     filename=args.dataset,
                     checkpoint_frequency=args.checkpoint_frequency,
                     save_name=args.save_name, corr_only=args.corr_only)

@@ -13,7 +13,7 @@ def run_fges(data_file, **kwargs):
     score = SEMBicScore(dataset, 2)  # Initialize SEMBic Object
     variables = list(range(len(dataset[0])))
     print("Running FGES on graph with " + str(len(variables)) + " nodes.")
-    fges = FGES(variables, score, 10, **kwargs)
+    fges = FGES(variables, score, **kwargs)
     return fges.search()
 
 def assert_unoriented_edge(edges, e):

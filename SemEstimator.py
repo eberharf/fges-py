@@ -24,10 +24,10 @@ class SemEstimator:
         self.pattern = pattern
         self.dag = None
 
-    def search(self):
+    def search(self, verbose=False):
         ''' Run an FGES search '''
         score = SEMBicScore(self.dataset, self.sparsity)
-        self._fges = FGES(list(range(self.dataset.shape[1])), score, 10, self.savename)
+        self._fges = FGES(list(range(self.dataset.shape[1])), score, save_name=self.savename, verbose=verbose)
         self._fges.search()
         self.set_pattern(self._fges.graph)
 
