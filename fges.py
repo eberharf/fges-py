@@ -36,7 +36,7 @@ class FGES:
 
     """
 
-    def __init__(self, variables, score, sparsity, filename='', checkpoint_frequency=0,
+    def __init__(self, variables, score, filename='', checkpoint_frequency=0,
                  save_name=None, knowledge=None, verbose=False):
         self.top_graphs = []
         self.last_checkpoint = time.time()
@@ -55,7 +55,7 @@ class FGES:
         self.arrow_dict = {}
         self.arrow_index = 0
         self.total_score = 0
-        self.sparsity = float(sparsity)
+        self.sparsity = score.penalty
         # Only needed for their `heuristic speedup`, it tells
         # you if two edges even have an effect on each other
         # the way we use this is effect_edges_graph[node] gives you
