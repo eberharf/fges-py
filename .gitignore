@@ -6,9 +6,10 @@ include/
 share/
 lib/
 bin/
-.idea/*
-test.npy
+.idea
 *.pkl
 *.pyc
 *.npy
 *.ipynb
+.DS_store
+*/.DS_store
