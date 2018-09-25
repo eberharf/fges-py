@@ -291,7 +291,7 @@ class FGES:
         """Evaluates the bump of removing edge X-->Y"""
         a = set(diff)
         a.update(graph_util.get_parents(self.graph, y))
-        a = a - set([x])
+        a = a - {x}
         return -1 * self.score_graph_change(y, a, x)
 
     def reevaluate_forward(self, to_process, arrow):
@@ -340,7 +340,7 @@ class FGES:
                     self.calculate_arrows_backward(node, adj_node)
 
     def reapply_orientation(self, x, y, new_arrows):
-        to_process = set([x, y])
+        to_process = {x, y}
         if new_arrows is not None:
             to_process.update(new_arrows)
 
@@ -451,24 +451,24 @@ class FGES:
         mean that if one gets modified, all will?
         """
         for i in range(len(self.variables)):
-            self.stored_neighbors[i] = set()
+            self.stored_neighbors[self.variables[i]] = set()
             for j in range(i + 1, len(self.variables)):
                 if self.knowledge is not None:
-                    if self.knowledge.is_forbidden(i, j) and self.knowledge.is_forbidden(j, i):
+                    if self.knowledge.is_forbidden(self.variables[i], self.variables[j]) and self.knowledge.is_forbidden(self.variables[j], self.variables[i]):
                         continue
                     # literally don't know the point of these next 2 lines
                     # because valid_set_by_knowledge on the empty set should
                     # always return True, but it's in Tetrad...
-                    if not self.valid_set_by_knowledge(i, set()):
+                    if not self.valid_set_by_knowledge(self.variables[i], set()):
                         continue
-                bump = self.score.local_score_diff(j, i)
+                bump = self.score.local_score_diff(self.variables[j], self.variables[i])
                 if self.verbose:
-                    print("Evaluated starting arrow " + str(j) + " -> " + str(
-                        i) + " with bump: " + str(bump))
+                    print("Evaluated starting arrow " + str(self.variables[j]) + " -> " + str(
+                        self.variables[i]) + " with bump: " + str(bump))
                 if bump > 0:
-                    self.mark_nonzero_effect(i, j)
-                    parent_node = j
-                    child_node = i
+                    self.mark_nonzero_effect(self.variables[i], self.variables[j])
+                    parent_node = self.variables[j]
+                    child_node = self.variables[i]
                     self.add_arrow(parent_node, child_node, set(), set(), bump)
                     self.add_arrow(child_node, parent_node, set(), set(), bump)
         if self.verbose:
