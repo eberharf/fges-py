@@ -8,7 +8,9 @@ class SEMBicScore:
     def __init__(self, penalty_discount,
                  dataset=None,
                  corrs=None, dataset_size=None,
-                 cache_interval=1):
+                 cache_interval=1,
+                 prior=None,
+                 prior_weight=None):
         """Initialize the SEMBicScore object.
 
         Must specify either the dataset or the correlation matrix and dataset size.
@@ -22,6 +24,8 @@ class SEMBicScore:
         self.penalty = penalty_discount
         self.cache = {}
         self.cache_interval = cache_interval
+        self.prior = prior
+        self.prior_weight = prior_weight
 
         if dataset is not None:
             assert corrs is None and dataset_size is None, \
@@ -38,6 +42,10 @@ class SEMBicScore:
 
         else:
             raise AssertionError("SEMBicScore: must specify either dataset or {corrs, dataset_size}")
+
+        if prior is not None:
+            assert prior_weight is not None
+            assert prior.shape == self.corrcoef.shape
 
     # def partial_corr(self, x, y, Z):
     #     """
@@ -131,12 +139,21 @@ class SEMBicScore:
     #     return bic
 
     def local_score_diff_parents(self, node1, node2, parents):
+        # return self.local_score(node2, parents + [node1]) - self.local_score(node2, parents)
+
         parents = frozenset(parents)
         r = self.recursive_partial_corr(node1, node2, parents)
-        return -self.sample_size * math.log(1.0 - r * r) - (len(parents) + 2) * self.penalty * math.log(self.sample_size)
-        #return self.local_score(node2, parents + [node1]) - self.local_score(node2, parents)
+        answer = -self.sample_size * math.log(1.0 - r * r) - self.penalty * math.log(self.sample_size)
+
+        if self.prior is not None:
+            answer -= self.prior_weight * np.log(self.prior[node1, node2] / (1 - self.prior[node1, node2]))
+
+        return answer
 
     def local_score_diff(self, node1, node2):
-        r = self.corrcoef[node1][node2]
-        return -self.sample_size * math.log(1.0 - r * r)
-        #return self.local_score(node2, [node1]) - self.local_score(node2, [])
+        return self.local_score_diff_parents(node1, node2, [])
+
+        # r = self.corrcoef[node1][node2]
+        # return -self.sample_size * math.log(1.0 - r * r)
+
+        # return self.local_score(node2, [node1]) - self.local_score(node2, [])

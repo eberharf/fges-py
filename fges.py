@@ -65,6 +65,7 @@ class FGES:
         self.cycle_bound = -1
         self.stored_neighbors = {}
         self.graph = None
+        self.forward_graph = None
         self.removed_edges = set()
         self.filename = filename
         self.in_bes = False
@@ -117,6 +118,8 @@ class FGES:
 
             if self.checkpoint_frequency > 0:
                 self.create_checkpoint()
+
+        self.forward_graph = self.graph.copy()
 
         self.bes()
 
