@@ -110,6 +110,7 @@ class FGES:
         self.mode = "heuristic"
         if not self.in_bes:
             self.fes()
+            self.score.set_in_forward(False)
             self.sorted_arrows = SortedListWithKey(key=lambda val: -val.bump)
             self.arrow_dict = {}
             self.stored_neighbors = {}

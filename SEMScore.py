@@ -10,7 +10,8 @@ class SEMBicScore:
                  corrs=None, dataset_size=None,
                  cache_interval=1,
                  prior=None,
-                 prior_weight=None):
+                 prior_weight=None,
+                 prior_forward_only=False):
         """Initialize the SEMBicScore object.
 
         Must specify either the dataset or the correlation matrix and dataset size.
@@ -26,6 +27,8 @@ class SEMBicScore:
         self.cache_interval = cache_interval
         self.prior = prior
         self.prior_weight = prior_weight
+        self.prior_forward_only = prior_forward_only
+        self.in_forward = True
 
         if dataset is not None:
             assert corrs is None and dataset_size is None, \
@@ -46,6 +49,9 @@ class SEMBicScore:
         if prior is not None:
             assert prior_weight is not None
             assert prior.shape == self.corrcoef.shape
+
+    def set_in_forward(self, val):
+        self.in_forward = val
 
     # def partial_corr(self, x, y, Z):
     #     """
@@ -145,8 +151,10 @@ class SEMBicScore:
         r = self.recursive_partial_corr(node1, node2, parents)
         answer = -self.sample_size * math.log(1.0 - r * r) - self.penalty * math.log(self.sample_size)
 
-        if self.prior is not None:
-            answer -= self.prior_weight * np.log(self.prior[node1, node2] / (1 - self.prior[node1, node2]))
+        if self.prior is not None and \
+                (not self.prior_forward_only or self.in_forward):
+            prior_diff = self.prior_weight * np.log(self.prior[node1, node2] / (1 - self.prior[node1, node2]))
+            answer += prior_diff
 
         return answer
 

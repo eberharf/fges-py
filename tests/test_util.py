@@ -22,7 +22,7 @@ def generate_graph(num_variables, sparsity=0.1, edge_weight_range=(0.5, 1.5)):
     edge_weights = edge_weights[vertex_shuffle, :]
     edge_weights = edge_weights[:, vertex_shuffle]
 
-    return edge_weights, vertex_shuffle
+    return edge_weights
 
 def generate_data(graph, num_data_points, variable_noise=1):
     num_vertices = graph.shape[0]
@@ -32,9 +32,12 @@ def generate_data(graph, num_data_points, variable_noise=1):
 
     data = np.zeros((num_data_points, num_vertices))
 
-    data[:, vertex_order[0]] = np.random.normal(0, variable_noise, num_data_points)
-
-    for i in range(1, num_vertices):
-        data[:, vertex_order[i]] = np.matmul(data[:, vertex_order[:i]], graph[vertex_order[:i], vertex_order[i]])
-        data[:, vertex_order[i]] += np.random.normal(0, variable_noise, num_data_points)
+    for i in range(num_vertices):
+        node = vertex_order[i]
+        parents = [j for j in vertex_order[:i] if graph[j, node] != 0]
+        if len(parents) > 0:
+            data[:, node] = np.matmul(data[:, parents], graph[parents, node])
+            data[:, node] += np.random.normal(0, variable_noise, num_data_points)
+        else:
+            data[:, node] = np.random.normal(0, 10 * variable_noise, num_data_points)
     return data
