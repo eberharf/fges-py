@@ -212,6 +212,10 @@ def remove_dir_edge(g, x, y):
 def exists_unblocked_semi_directed_path(g, origin, dest, cond_set, bound):
     """Checks if there exists a unblocked semi directed path (that is, there could be a possible path) from
     origin to dest, while conditioning on cond_set"""
+      
+    if len(cond_set) == 0:
+        return nx.has_path(g, origin, dest)
+
     if bound == -1:
         bound = 1000
 
