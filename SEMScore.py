@@ -1,17 +1,22 @@
 import numpy as np
 from numpy.linalg import inv
 import math
+import resource
 
+MEMORY_LIMIT = 8 * 1024**2 # KB
 
 class SEMBicScore:
 
-    def __init__(self, penalty_discount,
+    def __init__(self,
+                 penalty_discount,
                  dataset=None,
                  corrs=None, dataset_size=None,
                  cache_interval=1,
                  prior=None,
                  prior_weight=None,
-                 prior_forward_only=False):
+                 prior_forward_only=False,
+                 max_depth=8,
+                 use_big_param_penalty=False):
         """Initialize the SEMBicScore object.
 
         Must specify either the dataset or the correlation matrix and dataset size.
@@ -23,12 +28,20 @@ class SEMBicScore:
         :param cache_interval: parameter to limit how many partial correlations are cached
         """
         self.penalty = penalty_discount
+        self.dataset = dataset
         self.cache = {}
         self.cache_interval = cache_interval
+        self.cache_too_big = False
         self.prior = prior
         self.prior_weight = prior_weight
         self.prior_forward_only = prior_forward_only
         self.in_forward = True
+        self.max_depth = max_depth
+
+        if use_big_param_penalty:
+            self.param_penalty_weight = lambda parents: len(parents) + 2
+        else:
+            self.param_penalty_weight = lambda _: 1
 
         if dataset is not None:
             assert corrs is None and dataset_size is None, \
@@ -49,59 +62,60 @@ class SEMBicScore:
         if prior is not None:
             assert prior_weight is not None
             assert prior.shape == self.corrcoef.shape
+            self.effective_prior = prior_weight * np.log(prior / (1 - prior))
 
     def set_in_forward(self, val):
         self.in_forward = val
 
-    # def partial_corr(self, x, y, Z):
-    #     """
-    #     Returns the partial correlation coefficients between elements of X controlling for the elements in Z.
-    #     """
-    #     x_data = self.dataset[:,x]
-    #     y_data = self.dataset[:,y]
-    #     if Z == []:
-    #         return self.corrcoef[x, y]
-    #     Z_data = self.dataset[:,Z]
-    #
-    #     beta_i = np.linalg.lstsq(Z_data, x_data)[0]
-    #     beta_j = np.linalg.lstsq(Z_data, y_data)[0]
-    #
-    #     res_j = x_data - Z_data.dot(beta_i)
-    #     res_i = y_data - Z_data.dot(beta_j)
-    #
-    #     return np.corrcoef(res_i, res_j)[0, 1]
+    def partial_corr(self, x, y, Z):
+        """
+        Returns the partial correlation coefficients between elements of X controlling for the elements in Z.
+        """
+        Z = list(Z)
+        x_data = self.dataset[:,x]
+        y_data = self.dataset[:,y]
+        if Z == []:
+            return self.corrcoef[x, y]
+        Z_data = self.dataset[:,Z]
 
-    def recursive_partial_corr(self, x, y, Z):
+        beta_i = np.linalg.lstsq(Z_data, x_data, rcond=None)[0]
+        beta_j = np.linalg.lstsq(Z_data, y_data, rcond=None)[0]
+
+        res_j = x_data - Z_data.dot(beta_i)
+        res_i = y_data - Z_data.dot(beta_j)
+
+        return np.corrcoef(res_i, res_j)[0, 1]
+
+    def recursive_partial_corr(self, x, y, Z, depth=0):
         if len(Z) == 0:
             return self.corrcoef[x, y]
-        else:
-            z0 = min(Z)
-            Z1 = Z - {z0}
-            key1 = (frozenset({x, y}), Z1)
-            if key1 not in self.cache:
-                term1 = self.recursive_partial_corr(x, y, Z1)
-                if len(Z1) > 0 and len(Z1) % self.cache_interval == 0:
-                    self.cache[key1] = term1
-            else:
-                term1 = self.cache[key1]
 
-            key2 = (frozenset({x, z0}), Z1)
-            if key2 not in self.cache:
-                term2 = self.recursive_partial_corr(x, z0, Z1)
-                if len(Z1) > 0 and len(Z1) % self.cache_interval == 0:
-                    self.cache[key2] = term2
-            else:
-                term2 = self.cache[key2]
+        k = (frozenset({x, y}), Z)
+        if k in self.cache:
+            return self.cache[k]
 
-            key3 = (frozenset({y, z0}), Z1)
-            if key3 not in self.cache:
-                term3 = self.recursive_partial_corr(y, z0, Z1)
-                if len(Z1) > 0 and len(Z1) % self.cache_interval == 0:
-                    self.cache[key3] = term3
-            else:
-                term3 = self.cache[key3]
+        if depth >= self.max_depth:
+            return self.partial_corr(x, y, Z)
 
-            return (term1 - (term2 * term3)) / math.sqrt((1 - (term2 * term2)) * (1 - (term3 * term3)))
+        if not self.cache_too_big:
+            r = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss > MEMORY_LIMIT
+            if r:
+                print("Locking cache")
+                self.cache_too_big = True
+
+        
+        z0 = min(Z)
+        Z1 = Z - {z0}
+        term1 = self.recursive_partial_corr(x, y, Z1, depth + 1)
+        term2 = self.recursive_partial_corr(x, z0, Z1, depth + 1)
+        term3 = self.recursive_partial_corr(y, z0, Z1, depth + 1)
+
+        answer = (term1 - (term2 * term3)) / math.sqrt((1 - (term2 * term2)) * (1 - (term3 * term3)))
+
+        if not self.cache_too_big and len(Z) % self.cache_interval == 0:
+            self.cache[k] = answer
+
+        return answer
 
     # def local_score(self, node, parents):
     #     """ `node` is an int index """
@@ -149,12 +163,11 @@ class SEMBicScore:
 
         parents = frozenset(parents)
         r = self.recursive_partial_corr(node1, node2, parents)
-        answer = -self.sample_size * math.log(1.0 - r * r) - self.penalty * math.log(self.sample_size)
+        answer = -self.sample_size * np.log(1.0 - r**2) - self.param_penalty_weight(parents) * self.penalty * np.log(self.sample_size)
 
         if self.prior is not None and \
                 (not self.prior_forward_only or self.in_forward):
-            prior_diff = self.prior_weight * np.log(self.prior[node1, node2] / (1 - self.prior[node1, node2]))
-            answer += prior_diff
+            answer += self.effective_prior[node1, node2]
 
         return answer
 
@@ -164,4 +177,4 @@ class SEMBicScore:
         # r = self.corrcoef[node1][node2]
         # return -self.sample_size * math.log(1.0 - r * r)
 
-        # return self.local_score(node2, [node1]) - self.local_score(node2, [])
+        # return self.local_score(node2, [node1]) - self.local_score(node2, []) 

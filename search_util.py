@@ -169,7 +169,7 @@ def estimate_parameters(dag, data):
         a = data[:, inbound_nodes]
         b = data[:, j]
 
-        params, r, _, _ = np.linalg.lstsq(a, b)
+        params, r, _, _ = np.linalg.lstsq(a, b, rcond=None)
 
         residuals[j, j] = r / (data.shape[0] - 1)
 
