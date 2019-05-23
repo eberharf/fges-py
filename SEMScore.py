@@ -2,8 +2,13 @@ import numpy as np
 from numpy.linalg import inv
 import math
 import resource
+import platform
 
-MEMORY_LIMIT = 8 * 1024**2 # KB
+if platform.system() == "Linux":
+    # Memory checks only work for Linux operating systems
+    MEMORY_LIMIT = 8 * 1024**2 # KB
+else:
+    MEMORY_LIMIT = -1
 
 class SEMBicScore:
 
@@ -98,7 +103,7 @@ class SEMBicScore:
             return self.partial_corr(x, y, Z)
 
         if not self.cache_too_big:
-            r = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss > MEMORY_LIMIT
+            r = MEMORY_LIMIT > 0 and resource.getrusage(resource.RUSAGE_SELF).ru_maxrss > MEMORY_LIMIT
             if r:
                 print("Locking cache")
                 self.cache_too_big = True
