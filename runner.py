@@ -35,10 +35,10 @@ def main():
         result = fges.search(checkpoint=True)
     else:
         dataset = load_file(args.dataset)
-        score = SEMBicScore(dataset, args.sparsity) # Initialize SEMBic Object
+        score = SEMBicScore(args.sparsity, dataset=dataset) # Initialize SEMBic Object
         variables = list(range(len(dataset[0])))
         print("Running FGES on graph with " + str(len(variables)) + " nodes.")
-        fges = FGES(variables, score, args.sparsity,
+        fges = FGES(variables, score,
                     filename=args.dataset,
                     checkpoint_frequency=args.checkpoint_frequency,
                     save_name=args.save_name)
